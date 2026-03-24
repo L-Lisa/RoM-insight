@@ -11,9 +11,9 @@ Column mapping:
   BETYG                       → rating  ('-' becomes None)
   VIKTAT RESULTATMÅTT         → weighted_score
   RISKERAR HÄVNING            → risk_of_termination ('Ja' → True)
-  ANTAL RR1/RR2 (A+B+C sum)  → results (derived)
+  ANTAL RR1 NIVÅ A+B+C sum    → results (derived — RR1 only, not RR2)
   results / participants      → result_rate (derived)
-  PERIOD                      → dataset_date
+  PERIOD column is ignored    — dataset_date comes from the filename (YYYY_MM)
 """
 
 import pandas as pd
@@ -29,7 +29,8 @@ COLUMN_MAP = {
     "BETYG": "rating",
     "VIKTAT RESULTATMÅTT": "weighted_score",
     "RISKERAR HÄVNING": "risk_of_termination",
-    "PERIOD": "period",
+    # PERIOD is required (validated in REQUIRED_COLUMNS) but not mapped —
+    # dataset_date is set from the filename instead, which is more reliable.
 }
 
 # RR1 = first placement result per level.
@@ -64,7 +65,8 @@ def parse_dataset(file_path: str, dataset_date: date) -> pd.DataFrame:
     if missing:
         raise Exception(f"Missing required columns: {missing}")
 
-    # Derive total results from all RR1+RR2 level columns
+    # Derive total results: sum RR1 across all levels (A+B+C)
+    # RR2 is excluded — it tracks 90-day follow-ups for the same placement and would double-count
     df["results"] = df[RESULT_COLUMNS].apply(pd.to_numeric, errors="coerce").sum(axis=1)
 
     # Rename Swedish columns to English
