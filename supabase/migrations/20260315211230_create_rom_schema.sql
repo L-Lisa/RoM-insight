@@ -11,7 +11,10 @@ create table if not exists raw_datasets (
 );
 
 -- staging_rom_results
--- Parsed rows before QA validation
+-- Parsed rows written before QA validation passes.
+-- Intentionally a subset of rom_results: no result_rate or risk_of_termination.
+-- These derived fields are only computed for production-quality data.
+-- staging is an audit trail — do not use it to reconstruct rom_results.
 create table if not exists staging_rom_results (
   id            bigserial primary key,
   dataset_id    uuid not null references raw_datasets(dataset_id),
