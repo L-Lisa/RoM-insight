@@ -55,19 +55,19 @@ def parse_date_from_filename(filename: str) -> date:
     return date(int(m.group(1)), int(m.group(2)), 1)
 
 
-def already_imported(supabase, file_path: str) -> bool:
-    result = supabase.table("raw_datasets").select("dataset_id").eq("file_path", file_path).execute()
+def already_imported(supabase, filename: str) -> bool:
+    """Check by filename only — portable across machines and directory moves."""
+    result = supabase.table("raw_datasets").select("dataset_id").eq("file_path", filename).execute()
     return len(result.data) > 0
 
 
 def ingest_file(supabase, xlsx_path: Path) -> None:
     filename = xlsx_path.name
-    file_path_str = str(xlsx_path)
 
     print(f"\n{'='*60}")
     print(f"Processing: {filename}")
 
-    if already_imported(supabase, file_path_str):
+    if already_imported(supabase, filename):
         print("Already imported — skipping.")
         return
 
@@ -88,7 +88,7 @@ def ingest_file(supabase, xlsx_path: Path) -> None:
     # Step 4: Insert raw_datasets record
     raw_record = {
         "dataset_source": "Arbetsförmedlingen",
-        "file_path": file_path_str,
+        "file_path": filename,
     }
     raw_result = supabase.table("raw_datasets").insert(raw_record).execute()
     dataset_id = raw_result.data[0]["dataset_id"]
