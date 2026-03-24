@@ -13,5 +13,8 @@ node_modules/
 frontend/node_modules/
 frontend/.next/
 
+# Data files (Excel source data — run locally, never committed)
+data/raw/
+
 # macOS
 .DS_Store
