@@ -1,20 +1,28 @@
 import { supabase } from "@/lib/supabase";
 import { SupplierSearch } from "@/components/SupplierSearch";
 
-async function getAllSuppliers() {
+async function getLatestSuppliers() {
+  const { data: dateRow } = await supabase
+    .from("rom_results")
+    .select("dataset_date")
+    .order("dataset_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  const latestDate = dateRow?.dataset_date ?? null;
+  if (!latestDate) return { latest: [], latestDate: null };
+
   const { data } = await supabase
     .from("rom_results")
     .select("supplier, delivery_area, weighted_score, rating, result_rate, risk_of_termination, dataset_date")
+    .eq("dataset_date", latestDate)
     .order("weighted_score", { ascending: false });
-  return data ?? [];
+
+  return { latest: data ?? [], latestDate };
 }
 
 export default async function LeverantörerPage() {
-  const suppliers = await getAllSuppliers();
-
-  const dates = [...new Set(suppliers.map((s) => s.dataset_date))].sort().reverse();
-  const latestDate = dates[0];
-  const latest = suppliers.filter((s) => s.dataset_date === latestDate);
+  const { latest, latestDate } = await getLatestSuppliers();
 
   return (
     <div className="space-y-6">

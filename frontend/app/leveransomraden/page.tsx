@@ -4,15 +4,24 @@ import { Tooltip } from "@/components/Tooltip";
 import { tooltips } from "@/lib/tooltips";
 
 async function getAreaSummary() {
+  const { data: dateRow } = await supabase
+    .from("rom_results")
+    .select("dataset_date")
+    .order("dataset_date", { ascending: false })
+    .limit(1)
+    .single();
+
+  const latestDate = dateRow?.dataset_date ?? null;
+  if (!latestDate) return [];
+
   const { data } = await supabase
     .from("rom_results")
-    .select("delivery_area, weighted_score, risk_of_termination, participants, dataset_date")
-    .order("dataset_date", { ascending: false });
+    .select("delivery_area, weighted_score, risk_of_termination, participants")
+    .eq("dataset_date", latestDate);
 
   if (!data) return [];
 
-  const latestDate = data[0]?.dataset_date;
-  const latest = data.filter((r) => r.dataset_date === latestDate);
+  const latest = data;
 
   // Group by delivery area
   const areas = new Map<string, {
