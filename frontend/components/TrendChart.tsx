@@ -58,6 +58,8 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
           tick={{ fontSize: 12 }}
           tickFormatter={(v) => `${v}%`}
         />
+        {/* Hidden axis for Betyg (1–4 scale) — keeps the line proportionally correct */}
+        <YAxis yAxisId="rating" domain={[0, 4]} hide />
         <Tooltip
           formatter={(value, name) => {
             if (name === "Resultattakt (%)") return [`${value}%`, name];
@@ -84,7 +86,7 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
           connectNulls
         />
         <Line
-          yAxisId="score"
+          yAxisId="rating"
           type="monotone"
           dataKey="Betyg"
           stroke="#d97706"
