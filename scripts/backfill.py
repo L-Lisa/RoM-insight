@@ -122,6 +122,18 @@ def parse_result_sheet(xl: pd.ExcelFile, period: str) -> pd.DataFrame:
         lambda r: r["results"] / r["participants"] if pd.notna(r["participants"]) and r["participants"] > 0 else None,
         axis=1,
     )
+    # Nivådata + avtalsfakta (grunden för T5 "vad krävs?" och riskzonens 22-månaderskrav).
+    # Formeln verifierad 2026-07-03 mot samtliga 7084 publicerade värden:
+    # resultatmått = (viktade RR1+RR2) / (2 × antal deltagare)
+    out["contract_start_date"] = pd.to_datetime(df["STARTDATUM AVTAL"], errors="coerce").dt.date
+    if "AVTAL HAR VARIT AKTIVT I 22 MÅNADER" in df.columns:
+        out["active_22_months"] = df["AVTAL HAR VARIT AKTIVT I 22 MÅNADER"].astype(str).str.strip().str.lower() == "ja"
+    else:
+        out["active_22_months"] = None
+    for lvl in "abc":
+        out[f"participants_{lvl}"] = pd.to_numeric(df[f"ANTAL DELTAGARE NIVÅ {lvl.upper()}"], errors="coerce")
+        out[f"rr1_{lvl}"] = pd.to_numeric(df[f"ANTAL RR1 NIVÅ {lvl.upper()}"], errors="coerce")
+        out[f"rr2_{lvl}"] = pd.to_numeric(df[f"ANTAL RR2 NIVÅ {lvl.upper()}"], errors="coerce")
     out["dataset_date"] = period_to_date(period)
     return out
 

@@ -12,6 +12,17 @@ export interface RomResult {
   /** null = AF publicerade inte riskkolumnen den perioden */
   risk_of_termination: boolean | null;
   dataset_date: string;
+  contract_start_date: string | null;
+  active_22_months: boolean | null;
+  participants_a: number | null;
+  participants_b: number | null;
+  participants_c: number | null;
+  rr1_a: number | null;
+  rr2_a: number | null;
+  rr1_b: number | null;
+  rr2_b: number | null;
+  rr1_c: number | null;
+  rr2_c: number | null;
 }
 
 export interface Dataset {

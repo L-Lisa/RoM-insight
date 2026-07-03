@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { MarketEvent, RomResult, Supplier, SupplierRating } from "@/lib/types";
+import { MarketEvent, PeriodWeights, RomResult, Supplier, SupplierRating } from "@/lib/types";
 
 /**
  * Dataåtkomstlager. Regler:
@@ -74,6 +74,11 @@ export async function getAreaRows(period: string, area: string): Promise<RomResu
     .eq("delivery_area", area)
     .order("weighted_score", { ascending: false });
   return (data ?? []) as RomResult[];
+}
+
+export async function getPeriodWeights(period: string): Promise<PeriodWeights | null> {
+  const { data } = await supabase.from("period_weights").select("*").eq("period", period).maybeSingle();
+  return (data as PeriodWeights) ?? null;
 }
 
 export async function getSuppliers(): Promise<Supplier[]> {

@@ -6,9 +6,11 @@ import { TrendChart } from "@/components/TrendChart";
 import { PercentileBar } from "@/components/PercentileBar";
 import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
+import { WhatIsNeeded } from "@/components/WhatIsNeeded";
 import {
   getLatestPeriod,
   getPeriodRows,
+  getPeriodWeights,
   getSupplierBySlug,
   getSupplierRatingHistory,
   getSupplierResults,
@@ -58,6 +60,7 @@ export default async function SupplierPage({ params }: Props) {
   if (!rows.length) notFound();
 
   const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
+  const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
   const allScores = latestAll
     .map((r) => r.weighted_score)
     .filter((v): v is number => v !== null && v !== undefined);
@@ -175,6 +178,10 @@ export default async function SupplierPage({ params }: Props) {
           </table>
         </div>
       </section>
+
+      {!isExited && latestPeriod && (
+        <WhatIsNeeded contracts={latestRows} weights={weights} period={latestPeriod} />
+      )}
 
       {!isExited && biggest && latestPeriod && biggest.latest.dataset_date === latestPeriod && biggest.latest.weighted_score !== null && (
         <section className="card p-5">
