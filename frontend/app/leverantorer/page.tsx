@@ -1,39 +1,53 @@
-import { supabase } from "@/lib/supabase";
-import { SupplierSearch } from "@/components/SupplierSearch";
+import { SupplierDirectory, DirectoryEntry } from "@/components/SupplierDirectory";
+import { DataStamp } from "@/components/DataStamp";
+import { getLatestPeriod, getPeriodRows, getSuppliers } from "@/lib/queries";
+import { slugify } from "@/lib/format";
 
-async function getLatestSuppliers() {
-  const { data: dateRow } = await supabase
-    .from("rom_results")
-    .select("dataset_date")
-    .order("dataset_date", { ascending: false })
-    .limit(1)
-    .single();
+export const revalidate = 3600;
 
-  const latestDate = dateRow?.dataset_date ?? null;
-  if (!latestDate) return { latest: [], latestDate: null };
+export const metadata = {
+  title: "Leverantörer",
+  description:
+    "Alla Rusta och matcha-leverantörer: betyg, viktade resultat och trender per leveransområde. Sökbar katalog, grupperad efter status.",
+};
 
-  const { data } = await supabase
-    .from("rom_results")
-    .select("supplier, delivery_area, weighted_score, rating, result_rate, risk_of_termination, dataset_date")
-    .eq("dataset_date", latestDate)
-    .order("weighted_score", { ascending: false });
+export default async function LeverantorerPage() {
+  const [suppliers, latest] = await Promise.all([getSuppliers(), getLatestPeriod()]);
+  const latestRows = latest ? await getPeriodRows(latest) : [];
 
-  return { latest: data ?? [], latestDate };
-}
+  const active = new Map<string, { areas: number; bestRating: number | null }>();
+  for (const r of latestRows) {
+    const cur = active.get(r.supplier) ?? { areas: 0, bestRating: null };
+    cur.areas += 1;
+    if (r.rating !== null && (cur.bestRating === null || r.rating > cur.bestRating)) cur.bestRating = r.rating;
+    active.set(r.supplier, cur);
+  }
 
-export default async function LeverantörerPage() {
-  const { latest, latestDate } = await getLatestSuppliers();
+  const entries: DirectoryEntry[] = suppliers.map((s) => {
+    const a = active.get(s.name);
+    if (!a) return { name: s.name, slug: s.slug || slugify(s.name), group: "exited" as const, areas: 0, bestRating: null };
+    return {
+      name: s.name,
+      slug: s.slug || slugify(s.name),
+      group: a.bestRating === null ? ("unrated" as const) : ("active" as const),
+      areas: a.areas,
+      bestRating: a.bestRating,
+    };
+  });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Leverantörer</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {latest.length} leverantörsavtal · Period: {latestDate} · Källa: Arbetsförmedlingen
+        <h1 className="text-2xl font-semibold tracking-tight">Leverantörer</h1>
+        <p className="text-sm text-[var(--text-dim)] mt-1">
+          {entries.filter((e) => e.group !== "exited").length} leverantörer i senaste statistiken ·{" "}
+          {entries.filter((e) => e.group === "exited").length} utgångna
         </p>
+        <div className="mt-2">
+          <DataStamp period={latest} />
+        </div>
       </div>
-
-      <SupplierSearch suppliers={latest} />
+      <SupplierDirectory entries={entries} />
     </div>
   );
 }

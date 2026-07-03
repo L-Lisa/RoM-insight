@@ -1,137 +1,89 @@
-import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
-import { tooltips } from "@/lib/tooltips";
+import { explain } from "@/lib/tooltips";
+import { RatingBadge, RiskBadge } from "@/components/Badges";
+import { DataStamp } from "@/components/DataStamp";
+import { getAreaRows, getLatestPeriod } from "@/lib/queries";
+import { formatScore, periodLabel, slugify } from "@/lib/format";
+
+export const revalidate = 3600;
 
 interface Props {
   params: Promise<{ area: string }>;
 }
 
-async function getAreaData(areaName: string) {
-  const { data } = await supabase
-    .from("rom_results")
-    .select("*")
-    .eq("delivery_area", areaName)
-    .order("dataset_date", { ascending: false });
-  return data ?? [];
+export async function generateMetadata({ params }: Props) {
+  const { area } = await params;
+  const name = decodeURIComponent(area);
+  return {
+    title: `Rusta och matcha i ${name} — leverantörer och betyg`,
+    description: `Alla Rusta och matcha-leverantörer i ${name}: betyg, viktat resultat och riskläge. Data: Arbetsförmedlingen.`,
+  };
 }
 
 export default async function AreaPage({ params }: Props) {
-  const { area: encodedArea } = await params;
-  const areaName = decodeURIComponent(encodedArea);
-  const rows = await getAreaData(areaName);
+  const { area: encoded } = await params;
+  const areaName = decodeURIComponent(encoded);
+  const latest = await getLatestPeriod();
+  if (!latest) notFound();
 
-  if (rows.length === 0) notFound();
+  const rows = await getAreaRows(latest, areaName);
+  if (!rows.length) notFound();
 
-  const latestDate = rows[0].dataset_date;
-  const latest = rows.filter((r) => r.dataset_date === latestDate);
-  latest.sort((a, b) => (b.weighted_score ?? 0) - (a.weighted_score ?? 0));
+  const top5Keys = new Set(rows.slice(0, 5).map((r) => r.id));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div>
-        <Link href="/leveransomraden" className="text-sm text-gray-500 hover:text-gray-700">
-          ← Tillbaka till leveransområden
+        <Link href="/leveransomraden" className="text-sm text-[var(--text-dim)] hover:text-[var(--text)]">
+          ← Alla områden
         </Link>
-        <h1 className="text-2xl font-semibold mt-2">{areaName}</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {latest.length} leverantörsavtal · Period: {latestDate} · Källa: Arbetsförmedlingen
+        <h1 className="text-2xl font-semibold tracking-tight mt-2">Rusta och matcha i {areaName}</h1>
+        <p className="text-sm text-[var(--text-dim)] mt-1">
+          {rows.length} avtal · {periodLabel(latest)} · sorterade på viktat resultat
         </p>
+        <div className="mt-2"><DataStamp period={latest} /></div>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <MetricCard
-          label="Snitt viktat resultat"
-          value={(
-            latest.reduce((sum, r) => sum + (r.weighted_score ?? 0), 0) / latest.length
-          ).toFixed(3)}
-        />
-        <MetricCard
-          label="Totalt deltagare"
-          value={String(latest.reduce((sum, r) => sum + (r.participants ?? 0), 0))}
-        />
-        <MetricCard
-          label="Riskerar hävning"
-          value={String(latest.filter((r) => r.risk_of_termination).length)}
-          highlight={latest.some((r) => r.risk_of_termination)}
-        />
-      </div>
-
-      {/* Leaderboard for this area */}
-      <section>
-        <h2 className="text-lg font-medium mb-3">Leverantörer i {areaName}</h2>
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-              <tr>
-                <th className="px-4 py-3 text-left">#</th>
-                <th className="px-4 py-3 text-left">Leverantör</th>
-                <th className="px-4 py-3 text-right"><Tooltip label="Viktat resultat" text={tooltips.viktatResultat} /></th>
-                <th className="px-4 py-3 text-right"><Tooltip label="Resultattakt" text={tooltips.resultattakt} /></th>
-                <th className="px-4 py-3 text-right"><Tooltip label="Betyg" text={tooltips.betyg} /></th>
-                <th className="px-4 py-3 text-right">Deltagare</th>
-                <th className="px-4 py-3 text-center"><Tooltip label="Riskerar hävning" text={tooltips.riskHavning} /></th>
+      <div className="card overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="text-left">
+            <tr className="border-b border-[var(--line)]">
+              <th className="mono-label px-4 py-3 font-normal">#</th>
+              <th className="mono-label px-4 py-3 font-normal">Leverantör</th>
+              <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Viktat" layers={explain.viktatResultat} /></th>
+              <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Betyg" layers={explain.betyg} /></th>
+              <th className="mono-label px-4 py-3 font-normal text-right">Deltagare</th>
+              <th className="mono-label px-4 py-3 font-normal text-center"><Tooltip label="Risk" layers={explain.riskflagga} /></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--line-soft)]">
+            {rows.map((row, i) => (
+              <tr
+                key={row.id}
+                className={`hover:bg-[var(--bg-hover)] transition-colors ${top5Keys.has(row.id) ? "" : "opacity-80"}`}
+              >
+                <td className="px-4 py-3 text-[var(--text-faint)] tabular-nums">{i + 1}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link href={`/leverantorer/${slugify(row.supplier)}`} className="hover:text-[var(--compare-1)]">
+                    {row.supplier}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums">{formatScore(row.weighted_score)}</td>
+                <td className="px-4 py-3 text-right"><RatingBadge rating={row.rating} /></td>
+                <td className="px-4 py-3 text-right tabular-nums">{row.participants}</td>
+                <td className="px-4 py-3 text-center"><RiskBadge risk={row.risk_of_termination} /></td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {latest.map((row, i) => (
-                <tr key={i} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                  <td className="px-4 py-3 font-medium">
-                    <Link
-                      href={`/leverantorer/${encodeURIComponent(row.supplier)}`}
-                      className="hover:text-blue-600 hover:underline"
-                    >
-                      {row.supplier}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {row.weighted_score?.toFixed(3) ?? "–"}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {row.result_rate != null
-                      ? `${(row.result_rate * 100).toFixed(1)}%`
-                      : "–"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {row.rating ?? <span className="text-gray-400">–</span>}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">{row.participants}</td>
-                  <td className="px-4 py-3 text-center">
-                    {row.risk_of_termination ? (
-                      <span className="inline-block bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                        Ja
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">–</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
-  );
-}
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-function MetricCard({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-      <p className={`text-2xl font-semibold mt-1 ${highlight ? "text-red-600" : ""}`}>
-        {value}
+      <p className="text-xs text-[var(--text-dim)] max-w-2xl">
+        Ett resultat i {areaName} är inte automatiskt jämförbart med samma siffra i ett annat område — AF:s viktning
+        justerar för deltagarnas nivå, inte för den lokala arbetsmarknaden. Läs mer på{" "}
+        <Link href="/metod" className="link">metodsidan</Link>.
       </p>
     </div>
   );

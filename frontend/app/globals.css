@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
+/*
+  ROM Insight — design tokens (Rusta & Matcha Analytics)
+  Mörkt analysläge. Färgsemantik per kravprofilens §4e:
+  - Jämförelselinjer: dämpade blå-lila nyanser (max 5) + EN reserverad signalfärg
+  - Rött ENDAST för hävning/utgånget (faktum) — aldrig för låga betyg (värdering)
+  - Amber för riskflagga
+  - Betyg som neutrala fyllnadsnivåer, inte rött→grönt
+  All avläsbar information ska klara WCAG AA (4,5:1 text, 3:1 grafik);
+  endast kontext-lager (moln, bakgrundslinjer) får ligga under.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #0b101c;
+  --bg-raised: #111726;
+  --bg-card: #141b2d;
+  --bg-hover: #1a2338;
+  --line: #232d45;
+  --line-soft: #1a2338;
+
+  --text: #e9edf6;
+  --text-dim: #9aa5bd;
+  --text-faint: #67728c; /* endast dekorativt/ikoner, ej bärande text */
+
+  --compare-1: #7c96f5;
+  --compare-2: #9b85f0;
+  --compare-3: #62b6d9;
+  --compare-4: #8aa8ec;
+  --compare-5: #b095e6;
+  --signal: #4adeb9; /* reserverad: "din leverantör" / vald linje */
+
+  --risk: #d9a03f;        /* riskflagga (amber) */
+  --terminated: #e06c6c;  /* hävning/utgånget (faktum) */
+  --positive: #58b98d;    /* riktning upp i text/pilar, sparsamt */
+
+  --rating-fill: #7c96f5; /* betyg = en nyans, fyllnadsgrad visar nivån */
+
+  --radius-card: 16px;
+  --radius-badge: 6px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "tnum";
+}
+
+::selection {
+  background: var(--compare-1);
+  color: var(--bg);
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+.mono-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.data-stamp {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+a.link {
+  color: var(--compare-1);
+}
+a.link:hover {
+  text-decoration: underline;
+}
+
+/* Maskering av låst innehåll (topp 5-modellen) */
+.locked-blur {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
 }

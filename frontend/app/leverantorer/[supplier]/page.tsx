@@ -1,135 +1,251 @@
-import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
-import { tooltips } from "@/lib/tooltips";
+import { explain } from "@/lib/tooltips";
 import { TrendChart } from "@/components/TrendChart";
+import { PercentileBar } from "@/components/PercentileBar";
+import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
+import { DataStamp } from "@/components/DataStamp";
+import {
+  getLatestPeriod,
+  getPeriodScores,
+  getSupplierBySlug,
+  getSupplierRatingHistory,
+  getSupplierResults,
+  getSuppliers,
+  getTopContracts,
+  percentileOf,
+} from "@/lib/queries";
+import { contractInsight } from "@/lib/insights";
+import { formatScore, periodLabel, periodShort, slugify } from "@/lib/format";
+import { RomResult } from "@/lib/types";
+
+export const revalidate = 3600;
 
 interface Props {
   params: Promise<{ supplier: string }>;
 }
 
-async function getSupplierData(supplierName: string) {
-  const { data } = await supabase
-    .from("rom_results")
-    .select("*")
-    .eq("supplier", supplierName)
-    .order("dataset_date", { ascending: true });
-  return data ?? [];
+export async function generateMetadata({ params }: Props) {
+  const { supplier } = await params;
+  const s = await resolveSupplier(supplier);
+  if (!s) return { title: "Leverantör" };
+  return {
+    title: `${s} — betyg och resultat i Rusta och matcha`,
+    description: `${s}: betyg, viktat resultatmått och trend per leveransområde i Rusta och matcha. Data: Arbetsförmedlingen.`,
+  };
+}
+
+async function resolveSupplier(param: string): Promise<string | null> {
+  const decoded = decodeURIComponent(param);
+  const bySlug = await getSupplierBySlug(decoded);
+  if (bySlug) return bySlug.name;
+  // Bakåtkompatibilitet: gamla länkar använde URL-kodat namn
+  const suppliers = await getSuppliers();
+  const byName = suppliers.find((s) => s.name === decoded || s.slug === slugify(decoded));
+  return byName?.name ?? null;
 }
 
 export default async function SupplierPage({ params }: Props) {
-  const { supplier: encodedSupplier } = await params;
-  const supplierName = decodeURIComponent(encodedSupplier);
-  const rows = await getSupplierData(supplierName);
+  const { supplier: raw } = await params;
+  const name = await resolveSupplier(raw);
+  if (!name) notFound();
 
-  if (rows.length === 0) notFound();
+  const [rows, ratings, latestPeriod] = await Promise.all([
+    getSupplierResults(name),
+    getSupplierRatingHistory(name),
+    getLatestPeriod(),
+  ]);
+  if (!rows.length) notFound();
 
-  const latest = rows[rows.length - 1];
-  const history = rows;
+  const [allScores, top5] = await Promise.all([
+    latestPeriod ? getPeriodScores(latestPeriod) : Promise.resolve([]),
+    latestPeriod ? getTopContracts(latestPeriod, 5) : Promise.resolve([]),
+  ]);
+  const isTop5 = top5.some((r) => r.supplier === name);
+
+  const latestRows = rows.filter((r) => r.dataset_date === latestPeriod);
+  const isExited = latestRows.length === 0;
+  const lastSeen = rows[rows.length - 1].dataset_date;
+
+  // Per avtal (område): serie + senaste värde
+  const byArea = new Map<string, RomResult[]>();
+  for (const r of rows) {
+    byArea.set(r.delivery_area, [...(byArea.get(r.delivery_area) ?? []), r]);
+  }
+  const areas = Array.from(byArea.entries())
+    .map(([area, series]) => ({
+      area,
+      series,
+      latest: series[series.length - 1],
+      insight: contractInsight(series),
+    }))
+    .sort((a, b) => (b.latest.weighted_score ?? 0) - (a.latest.weighted_score ?? 0));
+
+  const biggest = [...areas].sort((a, b) => (b.latest.participants ?? 0) - (a.latest.participants ?? 0))[0];
+
+  // Betygsmatris: område × period ur betygshistoriken
+  const ratingPeriods = Array.from(new Set(ratings.map((r) => r.period))).sort();
+  const ratingAreas = Array.from(new Set(ratings.map((r) => r.delivery_area))).sort();
+
+  const compareKeys = areas.slice(0, 6).map((a) => `${name}|${a.area}`).join(",");
 
   return (
     <div className="space-y-8">
       <div>
-        <Link href="/leverantorer" className="text-sm text-gray-500 hover:text-gray-700">
-          ← Tillbaka till leverantörer
+        <Link href="/leverantorer" className="text-sm text-[var(--text-dim)] hover:text-[var(--text)]">
+          ← Alla leverantörer
         </Link>
-        <h1 className="text-2xl font-semibold mt-2">{supplierName}</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Leveransområde: {latest.delivery_area} · Senaste period: {latest.dataset_date} · Källa: Arbetsförmedlingen
+        <div className="flex flex-wrap items-center gap-3 mt-2">
+          <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+          {isExited && (
+            <span className="text-xs px-2 py-1 rounded-[var(--radius-badge)]" style={{ background: "rgba(224,108,108,0.12)", color: "var(--terminated)", border: "1px solid rgba(224,108,108,0.35)" }}>
+              Utgången ur statistiken — sista data {periodLabel(lastSeen)}
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-[var(--text-dim)] mt-1">
+          {isExited
+            ? `Fanns i statistiken t.o.m. ${periodLabel(lastSeen)}. Varför avtalen lämnat statistiken framgår inte av Arbetsförmedlingens filer.`
+            : `${latestRows.length} avtal i ${latestRows.length === 1 ? "ett" : latestRows.length} leveransområden · senaste mätning ${periodLabel(latestPeriod!)}`}
         </p>
+        <div className="mt-2"><DataStamp period={isExited ? lastSeen : latestPeriod} /></div>
       </div>
 
-      {/* Risk indicator */}
-      {latest.risk_of_termination && (
-        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
-          <span className="font-medium">Riskindikator:</span> Denna leverantör riskerar hävning av avtalet
-          enligt Arbetsförmedlingens officiella kriterier. Indikatorn är informativ och simulerar inte
-          officiella beslut.
+      {!isExited && biggest?.insight.text && (
+        <div className="card p-4 text-sm leading-relaxed">
+          <span className="mono-label block mb-1">Läget just nu <DirectionArrow direction={biggest.insight.direction} /></span>
+          {biggest.insight.text}
+          <span className="block text-xs text-[var(--text-dim)] mt-2">
+            Automatiskt formulerad ur AF:s siffror (största avtalet) — varje tal är spårbart till källfilen.
+          </span>
         </div>
       )}
 
-      {/* Latest metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <MetricCard label="Viktat resultatmått" value={latest.weighted_score?.toFixed(3) ?? "–"} />
-        <MetricCard
-          label="Resultattakt"
-          value={latest.result_rate != null ? `${(latest.result_rate * 100).toFixed(1)}%` : "–"}
-        />
-        <MetricCard label="Betyg" value={latest.rating != null ? String(latest.rating) : "Saknas"} />
-        <MetricCard label="Deltagare" value={String(latest.participants ?? "–")} />
-      </div>
-
-      {/* Trend chart */}
       <section>
-        <h2 className="text-lg font-medium mb-3">Trend</h2>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <TrendChart data={history} />
+        <h2 className="text-base font-medium mb-3">
+          Avtal per leveransområde {latestPeriod && !isExited && <span className="text-[var(--text-dim)] font-normal">— {periodLabel(latestPeriod)}</span>}
+        </h2>
+        <div className="card overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
+            <thead className="text-left">
+              <tr className="border-b border-[var(--line)]">
+                <th className="mono-label px-4 py-3 font-normal"><Tooltip label="Område" layers={explain.leveransomrade} /></th>
+                <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Viktat" layers={explain.viktatResultat} /></th>
+                <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Percentil" layers={explain.percentil} /></th>
+                <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Betyg" layers={explain.betyg} /></th>
+                <th className="mono-label px-4 py-3 font-normal text-right">Deltagare</th>
+                <th className="mono-label px-4 py-3 font-normal text-center"><Tooltip label="Risk" layers={explain.riskflagga} /></th>
+                <th className="mono-label px-4 py-3 font-normal text-right">Trend</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--line-soft)]">
+              {areas.map(({ area, latest, insight }) => (
+                <tr key={area} className="hover:bg-[var(--bg-hover)] transition-colors">
+                  <td className="px-4 py-3">{area}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatScore(latest.weighted_score)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
+                    {latest.dataset_date === latestPeriod && latest.weighted_score !== null
+                      ? `${percentileOf(latest.weighted_score, allScores)} %`
+                      : "–"}
+                  </td>
+                  <td className="px-4 py-3 text-right"><RatingBadge rating={latest.rating} /></td>
+                  <td className="px-4 py-3 text-right tabular-nums">{latest.participants}</td>
+                  <td className="px-4 py-3 text-center"><RiskBadge risk={latest.risk_of_termination} /></td>
+                  <td className="px-4 py-3 text-right"><DirectionArrow direction={insight.direction} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
-      {/* Historical table */}
-      {history.length > 1 && (
+      {!isExited && biggest && latestPeriod && biggest.latest.dataset_date === latestPeriod && biggest.latest.weighted_score !== null && (
+        <section className="card p-5">
+          <h2 className="text-base font-medium mb-3">
+            Position i marknaden <span className="text-[var(--text-dim)] font-normal">— största avtalet ({biggest.area})</span>
+          </h2>
+          <PercentileBar
+            value={biggest.latest.weighted_score}
+            allScores={allScores}
+            percentile={percentileOf(biggest.latest.weighted_score, allScores)}
+          />
+          <p className="text-xs text-[var(--text-dim)] mt-3">
+            Viktat resultat {formatScore(biggest.latest.weighted_score)} · Percentilen är RoM Insights beräkning mot samtliga {allScores.length} avtal i perioden — inte ett AF-mått.
+          </p>
+        </section>
+      )}
+
+      <section className="relative">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2 className="text-base font-medium">
+            Trend {biggest && <span className="text-[var(--text-dim)] font-normal">— {biggest.area}</span>}
+          </h2>
+          <Link href={`/jamfor?keys=${encodeURIComponent(compareKeys)}`} className="text-sm link">
+            Jämför alla områden →
+          </Link>
+        </div>
+        <div className="card p-4">
+          <div className={isTop5 ? "" : "locked-blur"} aria-hidden={!isTop5}>
+            <TrendChart data={biggest?.series ?? []} />
+          </div>
+          {!isTop5 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center px-6 py-4 rounded-xl border border-[var(--line)] bg-[var(--bg-raised)]/95 max-w-sm">
+                <p className="text-sm font-medium">Trendhistorik är öppen för topp 5</p>
+                <p className="text-xs text-[var(--text-dim)] mt-1">
+                  Är detta din leverantör? Claima profilen och se hela historiken kostnadsfritt — lanseras inom kort.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {ratingPeriods.length > 0 && (
         <section>
-          <h2 className="text-lg font-medium mb-3">Historik</h2>
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-                <tr>
-                  <th className="px-4 py-3 text-left">Period</th>
-                  <th className="px-4 py-3 text-right"><Tooltip label="Viktat resultat" text={tooltips.viktatResultat} /></th>
-                  <th className="px-4 py-3 text-right"><Tooltip label="Resultattakt" text={tooltips.resultattakt} /></th>
-                  <th className="px-4 py-3 text-right"><Tooltip label="Betyg" text={tooltips.betyg} /></th>
-                  <th className="px-4 py-3 text-right">Deltagare</th>
-                  <th className="px-4 py-3 text-center"><Tooltip label="Riskerar hävning" text={tooltips.riskHavning} /></th>
+          <h2 className="text-base font-medium mb-3">
+            Betygshistorik <span className="text-[var(--text-dim)] font-normal">— {periodLabel(ratingPeriods[0])} till {periodLabel(ratingPeriods[ratingPeriods.length - 1])}</span>
+          </h2>
+          <div className="card overflow-x-auto relative">
+            <table className={`w-full text-sm min-w-[760px] ${isTop5 ? "" : "locked-blur"}`}>
+              <thead className="text-left">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="mono-label px-4 py-3 font-normal">Område</th>
+                  {ratingPeriods.map((p) => (
+                    <th key={p} className="mono-label px-2 py-3 font-normal text-center">{periodShort(p)}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[...history].reverse().map((row, i) => (
-                  <tr key={i} className={i === 0 ? "bg-blue-50" : "hover:bg-gray-50"}>
-                    <td className="px-4 py-3 tabular-nums">
-                      {row.dataset_date}
-                      {i === 0 && (
-                        <span className="ml-2 text-xs text-blue-600 font-medium">Senaste</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {row.weighted_score?.toFixed(3) ?? "–"}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {row.result_rate != null
-                        ? `${(row.result_rate * 100).toFixed(1)}%`
-                        : "–"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {row.rating ?? <span className="text-gray-400">–</span>}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{row.participants}</td>
-                    <td className="px-4 py-3 text-center">
-                      {row.risk_of_termination ? (
-                        <span className="inline-block bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                          Ja
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">–</span>
-                      )}
-                    </td>
+              <tbody className="divide-y divide-[var(--line-soft)]">
+                {ratingAreas.map((area) => (
+                  <tr key={area}>
+                    <td className="px-4 py-2.5">{area}</td>
+                    {ratingPeriods.map((p) => {
+                      const cell = ratings.find((r) => r.delivery_area === area && r.period === p);
+                      return (
+                        <td key={p} className="px-2 py-2.5 text-center tabular-nums">
+                          {cell ? (cell.rating ?? <span className="text-[var(--text-faint)]" title="Ej betygsatt ännu">·</span>) : <span className="text-[var(--text-faint)]">–</span>}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
             </table>
+            {!isTop5 && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <p className="text-sm px-4 py-2 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)]/95">
+                  Hela betygshistoriken låses upp med claimad profil — lanseras inom kort.
+                </p>
+              </div>
+            )}
           </div>
+          <p className="text-xs text-[var(--text-dim)] mt-2">
+            · = ej betygsatt ännu (under betygströskeln) · – = fanns inte i området den perioden
+          </p>
         </section>
       )}
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-      <p className="text-2xl font-semibold mt-1">{value}</p>
     </div>
   );
 }

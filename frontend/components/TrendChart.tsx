@@ -10,6 +10,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { periodShort } from "@/lib/format";
+
+/**
+ * Få-punkters-ärlighet (kravprofil §4d): AF-serien har max ~9 punkter.
+ * Monotone-interpolation + SYNLIGA punktmarkörer på valda linjer — kurvan får
+ * aldrig antyda data mellan mätpunkterna. connectNulls är AV: luckor är data.
+ */
 
 interface TrendPoint {
   dataset_date: string;
@@ -18,81 +25,71 @@ interface TrendPoint {
   rating: number | null;
 }
 
+const AXIS_TICK = { fontSize: 11, fill: "var(--text-dim)" };
+
 export function TrendChart({ data }: { data: TrendPoint[] }) {
-  if (data.length < 2) {
+  if (data.filter((d) => d.weighted_score !== null || d.rating !== null).length < 2) {
     return (
-      <p className="text-sm text-gray-400 italic py-4">
-        Trenddata kräver minst två mätperioder.
+      <p className="text-sm text-[var(--text-dim)] italic py-4">
+        Trend kräver minst två mätperioder — visas när nästa AF-släpp är inne.
       </p>
     );
   }
 
   const chartData = data.map((d) => ({
-    period: d.dataset_date,
+    period: periodShort(d.dataset_date),
     "Viktat resultat": d.weighted_score ?? null,
-    "Resultattakt (%)":
-      d.result_rate != null
-        ? Math.round(d.result_rate * 1000) / 10
-        : null,
     Betyg: d.rating ?? null,
   }));
 
   return (
     <ResponsiveContainer width="100%" height={260}>
-      <LineChart
-        data={chartData}
-        margin={{ top: 4, right: 24, bottom: 4, left: 0 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis dataKey="period" tick={{ fontSize: 12 }} />
+      <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--line-soft)" />
+        <XAxis dataKey="period" tick={AXIS_TICK} stroke="var(--line)" />
         <YAxis
           yAxisId="score"
-          domain={[0, 1]}
-          tick={{ fontSize: 12 }}
-          tickFormatter={(v) => v.toFixed(1)}
+          domain={[0, 0.6]}
+          tick={AXIS_TICK}
+          stroke="var(--line)"
+          tickFormatter={(v: number) => v.toFixed(1).replace(".", ",")}
         />
         <YAxis
-          yAxisId="pct"
+          yAxisId="rating"
           orientation="right"
-          domain={[0, 100]}
-          tick={{ fontSize: 12 }}
-          tickFormatter={(v) => `${v}%`}
+          domain={[0, 4]}
+          ticks={[1, 2, 3, 4]}
+          tick={AXIS_TICK}
+          stroke="var(--line)"
         />
-        {/* Hidden axis for Betyg (1–4 scale) — keeps the line proportionally correct */}
-        <YAxis yAxisId="rating" domain={[0, 4]} hide />
         <Tooltip
-          formatter={(value, name) => {
-            if (name === "Resultattakt (%)") return [`${value}%`, name];
-            return [value, name];
+          contentStyle={{
+            background: "var(--bg-raised)",
+            border: "1px solid var(--line)",
+            borderRadius: 8,
+            color: "var(--text)",
+            fontSize: 12,
           }}
+          formatter={(value, name) =>
+            name === "Viktat resultat" && typeof value === "number" ? [value.toFixed(3).replace(".", ","), name] : [value, name]
+          }
         />
-        <Legend />
+        <Legend wrapperStyle={{ fontSize: 12, color: "var(--text-dim)" }} />
         <Line
           yAxisId="score"
           type="monotone"
           dataKey="Viktat resultat"
-          stroke="#2563eb"
+          stroke="var(--compare-1)"
           strokeWidth={2}
-          dot={{ r: 4 }}
-          connectNulls
-        />
-        <Line
-          yAxisId="pct"
-          type="monotone"
-          dataKey="Resultattakt (%)"
-          stroke="#16a34a"
-          strokeWidth={2}
-          dot={{ r: 4 }}
-          connectNulls
+          dot={{ r: 4, fill: "var(--compare-1)", strokeWidth: 0 }}
         />
         <Line
           yAxisId="rating"
-          type="monotone"
+          type="stepAfter"
           dataKey="Betyg"
-          stroke="#d97706"
+          stroke="var(--compare-3)"
           strokeWidth={2}
-          dot={{ r: 4 }}
-          connectNulls
+          dot={{ r: 4, fill: "var(--compare-3)", strokeWidth: 0 }}
         />
       </LineChart>
     </ResponsiveContainer>
