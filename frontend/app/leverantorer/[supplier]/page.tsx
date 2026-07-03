@@ -31,9 +31,12 @@ export async function generateMetadata({ params }: Props) {
   const { supplier } = await params;
   const s = await resolveSupplier(supplier);
   if (!s) return { title: "Leverantör" };
+  const og = `/og?${new URLSearchParams({ title: s, sub: "Betyg, viktat resultat och trend per leveransområde i Rusta och matcha" })}`;
   return {
     title: `${s} — betyg och resultat i Rusta och matcha`,
     description: `${s}: betyg, viktat resultatmått och trend per leveransområde i Rusta och matcha. Data: Arbetsförmedlingen.`,
+    openGraph: { title: s, images: [{ url: og, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image" },
   };
 }
 

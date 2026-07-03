@@ -12,6 +12,7 @@ const links = [
   { href: "/riskzon", label: "Riskzon" },
   { href: "/handelser", label: "Händelser" },
   { href: "/arkiv", label: "Arkiv" },
+  { href: "/marknadsbrevet", label: "Marknadsbrevet" },
   { href: "/metod", label: "Metod" },
 ];
 

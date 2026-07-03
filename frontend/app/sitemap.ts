@@ -19,6 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/jamfor`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE}/handelser`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/arkiv`, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE}/marknadsbrevet`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/metod`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/om`, changeFrequency: "monthly", priority: 0.4 },
     ...suppliers.map((s) => ({

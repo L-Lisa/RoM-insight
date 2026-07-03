@@ -13,6 +13,9 @@ export const metadata: Metadata = {
   },
   description:
     "Oberoende statistiksajt för Rusta och matcha-marknaden: betyg, viktade resultat, trender, riskzon och händelser per leverantör och leveransområde. Data: Arbetsförmedlingen.",
+  openGraph: {
+    images: [{ url: "/og?title=Rusta%20och%20matcha-marknaden%20i%20siffror&sub=Betyg%2C%20viktade%20resultat%2C%20trender%20och%20h%C3%A4ndelser%20per%20leverant%C3%B6r%20och%20omr%C3%A5de", width: 1200, height: 630 }],
+  },
 };
 
 export default function RootLayout({

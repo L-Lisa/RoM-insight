@@ -16,9 +16,12 @@ interface Props {
 export async function generateMetadata({ params }: Props) {
   const { area } = await params;
   const name = decodeURIComponent(area);
+  const og = `/og?${new URLSearchParams({ title: `Rusta och matcha i ${name}`, sub: "Leverantörer, betyg och viktade resultat i området" })}`;
   return {
     title: `Rusta och matcha i ${name} — leverantörer och betyg`,
     description: `Alla Rusta och matcha-leverantörer i ${name}: betyg, viktat resultat och riskläge. Data: Arbetsförmedlingen.`,
+    openGraph: { title: `Rusta och matcha i ${name}`, images: [{ url: og, width: 1200, height: 630 }] },
+    twitter: { card: "summary_large_image" },
   };
 }
 
