@@ -47,9 +47,14 @@ RoM-insight/
 
 **There is exactly ONE Vercel project for this repository.**
 
-- Vercel project name: `frontend`
+- Vercel project name: `ro-m-insight` (verified via Vercel API 2026-07-03;
+  an earlier version of this file said `frontend`, which was wrong)
 - Root directory in Vercel: `frontend/`
 - Framework: Next.js
+- Production URL: https://ro-m-insight.vercel.app (deploys from `master`)
+- Preview deployments (other branches) are behind Vercel SSO — only the
+  team sees them. NEXT_PUBLIC Supabase config has a code fallback in
+  `frontend/lib/supabase.ts` because the Vercel project has no env vars.
 
 Do not create additional Vercel projects for this repository. There is no reason
 to have more than one. If you are ever asked to set up Vercel for this project,
