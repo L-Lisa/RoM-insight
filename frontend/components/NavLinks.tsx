@@ -5,9 +5,11 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Översikt" },
+  { href: "/marknad", label: "Marknad" },
   { href: "/leverantorer", label: "Leverantörer" },
   { href: "/leveransomraden", label: "Områden" },
   { href: "/jamfor", label: "Jämför" },
+  { href: "/riskzon", label: "Riskzon" },
   { href: "/handelser", label: "Händelser" },
   { href: "/arkiv", label: "Arkiv" },
   { href: "/metod", label: "Metod" },

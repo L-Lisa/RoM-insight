@@ -8,12 +8,11 @@ import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import {
   getLatestPeriod,
-  getPeriodScores,
+  getPeriodRows,
   getSupplierBySlug,
   getSupplierRatingHistory,
   getSupplierResults,
   getSuppliers,
-  getTopContracts,
   percentileOf,
 } from "@/lib/queries";
 import { contractInsight } from "@/lib/insights";
@@ -58,11 +57,19 @@ export default async function SupplierPage({ params }: Props) {
   ]);
   if (!rows.length) notFound();
 
-  const [allScores, top5] = await Promise.all([
-    latestPeriod ? getPeriodScores(latestPeriod) : Promise.resolve([]),
-    latestPeriod ? getTopContracts(latestPeriod, 5) : Promise.resolve([]),
-  ]);
-  const isTop5 = top5.some((r) => r.supplier === name);
+  const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
+  const allScores = latestAll
+    .map((r) => r.weighted_score)
+    .filter((v): v is number => v !== null && v !== undefined);
+  // C2: benchmark mot områdets snitt (RoM Insights beräkning, oviktat medel)
+  const areaAvg = new Map<string, number>();
+  {
+    const acc = new Map<string, number[]>();
+    for (const r of latestAll) {
+      if (r.weighted_score !== null) acc.set(r.delivery_area, [...(acc.get(r.delivery_area) ?? []), r.weighted_score]);
+    }
+    for (const [a, v] of acc) areaAvg.set(a, v.reduce((x, y) => x + y, 0) / v.length);
+  }
 
   const latestRows = rows.filter((r) => r.dataset_date === latestPeriod);
   const isExited = latestRows.length === 0;
@@ -133,6 +140,7 @@ export default async function SupplierPage({ params }: Props) {
                 <th className="mono-label px-4 py-3 font-normal"><Tooltip label="Område" layers={explain.leveransomrade} /></th>
                 <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Viktat" layers={explain.viktatResultat} /></th>
                 <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Percentil" layers={explain.percentil} /></th>
+                <th className="mono-label px-4 py-3 font-normal text-right">Mot områdets snitt</th>
                 <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Betyg" layers={explain.betyg} /></th>
                 <th className="mono-label px-4 py-3 font-normal text-right">Deltagare</th>
                 <th className="mono-label px-4 py-3 font-normal text-center"><Tooltip label="Risk" layers={explain.riskflagga} /></th>
@@ -148,6 +156,14 @@ export default async function SupplierPage({ params }: Props) {
                     {latest.dataset_date === latestPeriod && latest.weighted_score !== null
                       ? `${percentileOf(latest.weighted_score, allScores)} %`
                       : "–"}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
+                    {(() => {
+                      const avg = areaAvg.get(area);
+                      if (avg === undefined || latest.weighted_score === null || latest.dataset_date !== latestPeriod) return "–";
+                      const rel = Math.round(((latest.weighted_score - avg) / avg) * 100);
+                      return rel > 0 ? `+${rel} %` : `${rel} %`;
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right"><RatingBadge rating={latest.rating} /></td>
                   <td className="px-4 py-3 text-right tabular-nums">{latest.participants}</td>
@@ -186,19 +202,7 @@ export default async function SupplierPage({ params }: Props) {
           </Link>
         </div>
         <div className="card p-4">
-          <div className={isTop5 ? "" : "locked-blur"} aria-hidden={!isTop5}>
-            <TrendChart data={biggest?.series ?? []} />
-          </div>
-          {!isTop5 && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center px-6 py-4 rounded-xl border border-[var(--line)] bg-[var(--bg-raised)]/95 max-w-sm">
-                <p className="text-sm font-medium">Trendhistorik är öppen för topp 5</p>
-                <p className="text-xs text-[var(--text-dim)] mt-1">
-                  Är detta din leverantör? Claima profilen och se hela historiken kostnadsfritt — lanseras inom kort.
-                </p>
-              </div>
-            </div>
-          )}
+          <TrendChart data={biggest?.series ?? []} />
         </div>
       </section>
 
@@ -208,7 +212,7 @@ export default async function SupplierPage({ params }: Props) {
             Betygshistorik <span className="text-[var(--text-dim)] font-normal">— {periodLabel(ratingPeriods[0])} till {periodLabel(ratingPeriods[ratingPeriods.length - 1])}</span>
           </h2>
           <div className="card overflow-x-auto relative">
-            <table className={`w-full text-sm min-w-[760px] ${isTop5 ? "" : "locked-blur"}`}>
+            <table className="w-full text-sm min-w-[760px]">
               <thead className="text-left">
                 <tr className="border-b border-[var(--line)]">
                   <th className="mono-label px-4 py-3 font-normal">Område</th>
@@ -233,13 +237,6 @@ export default async function SupplierPage({ params }: Props) {
                 ))}
               </tbody>
             </table>
-            {!isTop5 && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-sm px-4 py-2 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)]/95">
-                  Hela betygshistoriken låses upp med claimad profil — lanseras inom kort.
-                </p>
-              </div>
-            )}
           </div>
           <p className="text-xs text-[var(--text-dim)] mt-2">
             · = ej betygsatt ännu (under betygströskeln) · – = fanns inte i området den perioden
