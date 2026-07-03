@@ -353,11 +353,11 @@ with ds as (
 {chunk}
 ), st as (
   insert into staging_rom_results (dataset_id, supplier, delivery_area, ka_number, participants, results, rating, weighted_score, dataset_date)
-  select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants, v.results, v.rating, v.weighted_score, v.dataset_date::date
+  select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants::numeric, v.results::numeric, v.rating::numeric, v.weighted_score::numeric, v.dataset_date::date
   from ds, v
 )
 insert into rom_results (dataset_id, supplier, delivery_area, ka_number, participants, results, rating, weighted_score, result_rate, risk_of_termination, dataset_date)
-select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants, v.results, v.rating, v.weighted_score, v.result_rate, v.risk_of_termination, v.dataset_date::date
+select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants::numeric, v.results::numeric, v.rating::numeric, v.weighted_score::numeric, v.result_rate::numeric, v.risk_of_termination::boolean, v.dataset_date::date
 from ds, v
 on conflict (supplier, delivery_area, dataset_date) do nothing;
 """)
