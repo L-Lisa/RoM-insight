@@ -4,7 +4,7 @@ import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import { RatingBadge, RiskBadge } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
-import { getAreaRows, getLatestPeriod } from "@/lib/queries";
+import { getAreaMunicipalities, getAreaRows, getLatestPeriod } from "@/lib/queries";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
 
 export const revalidate = 3600;
@@ -31,7 +31,10 @@ export default async function AreaPage({ params }: Props) {
   const latest = await getLatestPeriod();
   if (!latest) notFound();
 
-  const rows = await getAreaRows(latest, areaName);
+  const [rows, municipalities] = await Promise.all([
+    getAreaRows(latest, areaName),
+    getAreaMunicipalities(areaName),
+  ]);
   if (!rows.length) notFound();
 
   const top5Keys = new Set(rows.slice(0, 5).map((r) => r.id));
@@ -46,6 +49,11 @@ export default async function AreaPage({ params }: Props) {
         <p className="text-sm text-[var(--text-dim)] mt-1">
           {rows.length} avtal · {periodLabel(latest)} · sorterade på viktat resultat
         </p>
+        {municipalities.length > 0 && (
+          <p className="text-xs text-[var(--text-dim)] mt-1 max-w-3xl">
+            Omfattar kommunerna: {municipalities.join(", ")} <span className="text-[var(--text-faint)]">(AF:s leveransområdesindelning)</span>
+          </p>
+        )}
         <div className="mt-2"><DataStamp period={latest} /></div>
       </div>
 

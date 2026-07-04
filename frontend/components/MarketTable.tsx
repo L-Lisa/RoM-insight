@@ -15,9 +15,11 @@ export interface MarketRow {
   rating: number | null;
   participants: number;
   results: number;
+  /** RR2/RR1 i procent — RoM Insights beräkning; null om RR1 = 0 */
+  sustainability: number | null;
 }
 
-type SortKey = "supplier" | "delivery_area" | "weighted_score" | "rating" | "participants" | "results";
+type SortKey = "supplier" | "delivery_area" | "weighted_score" | "rating" | "participants" | "results" | "sustainability";
 
 const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: "supplier", label: "Leverantör", numeric: false },
@@ -26,6 +28,7 @@ const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: "rating", label: "Betyg", numeric: true },
   { key: "participants", label: "Deltagare", numeric: true },
   { key: "results", label: "Resultat", numeric: true },
+  { key: "sustainability", label: "Hållbarhet", numeric: true },
 ];
 
 export function MarketTable({ rows }: { rows: MarketRow[] }) {
@@ -96,6 +99,9 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.rating ?? <span className="text-[var(--text-faint)]" title="Ej betygsatt ännu">·</span>}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.participants}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.results}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-[var(--text-dim)]">
+                  {r.sustainability === null ? "–" : `${r.sustainability} %`}
+                </td>
               </tr>
             ))}
           </tbody>

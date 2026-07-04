@@ -7,11 +7,13 @@ import { PercentileBar } from "@/components/PercentileBar";
 import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import { WhatIsNeeded } from "@/components/WhatIsNeeded";
+import { PrintButton } from "@/components/PrintButton";
 import {
   getLatestPeriod,
   getPeriodRows,
   getPeriodWeights,
   getSupplierBySlug,
+  getSupplierOffices,
   getSupplierRatingHistory,
   getSupplierResults,
   getSuppliers,
@@ -29,8 +31,9 @@ interface Props {
 
 export async function generateMetadata({ params }: Props) {
   const { supplier } = await params;
-  const s = await resolveSupplier(supplier);
-  if (!s) return { title: "Leverantör" };
+  const sup = await resolveSupplier(supplier);
+  if (!sup) return { title: "Leverantör" };
+  const s = sup.name;
   const og = `/og?${new URLSearchParams({ title: s, sub: "Betyg, viktat resultat och trend per leveransområde i Rusta och matcha" })}`;
   return {
     title: `${s} — betyg och resultat i Rusta och matcha`,
@@ -40,25 +43,26 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-async function resolveSupplier(param: string): Promise<string | null> {
+async function resolveSupplier(param: string) {
   const decoded = decodeURIComponent(param);
   const bySlug = await getSupplierBySlug(decoded);
-  if (bySlug) return bySlug.name;
+  if (bySlug) return bySlug;
   // Bakåtkompatibilitet: gamla länkar använde URL-kodat namn
   const suppliers = await getSuppliers();
-  const byName = suppliers.find((s) => s.name === decoded || s.slug === slugify(decoded));
-  return byName?.name ?? null;
+  return suppliers.find((s) => s.name === decoded || s.slug === slugify(decoded)) ?? null;
 }
 
 export default async function SupplierPage({ params }: Props) {
   const { supplier: raw } = await params;
-  const name = await resolveSupplier(raw);
-  if (!name) notFound();
+  const sup = await resolveSupplier(raw);
+  if (!sup) notFound();
+  const name = sup.name;
 
-  const [rows, ratings, latestPeriod] = await Promise.all([
+  const [rows, ratings, latestPeriod, offices] = await Promise.all([
     getSupplierResults(name),
     getSupplierRatingHistory(name),
     getLatestPeriod(),
+    getSupplierOffices(sup.id),
   ]);
   if (!rows.length) notFound();
 
@@ -111,6 +115,7 @@ export default async function SupplierPage({ params }: Props) {
         </Link>
         <div className="flex flex-wrap items-center gap-3 mt-2">
           <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
+          <span className="ml-auto"><PrintButton /></span>
           {isExited && (
             <span className="text-xs px-2 py-1 rounded-[var(--radius-badge)]" style={{ background: "rgba(224,108,108,0.12)", color: "var(--terminated)", border: "1px solid rgba(224,108,108,0.35)" }}>
               Utgången ur statistiken — sista data {periodLabel(lastSeen)}
@@ -215,6 +220,76 @@ export default async function SupplierPage({ params }: Props) {
           <TrendChart data={biggest?.series ?? []} />
         </div>
       </section>
+
+      {!isExited && latestRows.length > 0 && (
+        <section>
+          <h2 className="text-base font-medium mb-1">Deltagarprofil &amp; hållbarhet</h2>
+          <p className="text-sm text-[var(--text-dim)] mb-3 max-w-3xl">
+            Vilka grupper avtalen jobbar med, och hur stor andel av de första resultaten som följts av godkänd
+            uppföljning. RoM Insights beräkningar på AF:s nivådata.
+          </p>
+          <div className="card overflow-x-auto">
+            <table className="w-full text-sm min-w-[640px]">
+              <thead className="text-left">
+                <tr className="border-b border-[var(--line)]">
+                  <th className="mono-label px-4 py-3 font-normal">Område</th>
+                  <th className="mono-label px-4 py-3 font-normal"><Tooltip label="Deltagarmix A/B/C" layers={explain.deltagarmix} /></th>
+                  <th className="mono-label px-4 py-3 font-normal text-right">Andel nivå C</th>
+                  <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Hållbarhet RR2/RR1" layers={explain.hallbarhet} /></th>
+                  <th className="mono-label px-4 py-3 font-normal text-right">RR1 / RR2</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--line-soft)]">
+                {latestRows.map((r) => {
+                  const pa = r.participants_a ?? 0, pb = r.participants_b ?? 0, pc = r.participants_c ?? 0;
+                  const tot = pa + pb + pc;
+                  const rr1 = (r.rr1_a ?? 0) + (r.rr1_b ?? 0) + (r.rr1_c ?? 0);
+                  const rr2 = (r.rr2_a ?? 0) + (r.rr2_b ?? 0) + (r.rr2_c ?? 0);
+                  return (
+                    <tr key={r.id} className="hover:bg-[var(--bg-hover)] transition-colors">
+                      <td className="px-4 py-3">{r.delivery_area}</td>
+                      <td className="px-4 py-3">
+                        {tot > 0 ? (
+                          <span className="inline-flex h-3 w-40 rounded-sm overflow-hidden" title={`A ${pa} · B ${pb} · C ${pc}`}>
+                            <span style={{ width: `${(pa / tot) * 100}%`, background: "var(--compare-3)", opacity: 0.55 }} />
+                            <span style={{ width: `${(pb / tot) * 100}%`, background: "var(--compare-1)", opacity: 0.7 }} />
+                            <span style={{ width: `${(pc / tot) * 100}%`, background: "var(--compare-2)" }} />
+                          </span>
+                        ) : "–"}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">{tot > 0 ? `${Math.round((pc / tot) * 100)} %` : "–"}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{rr1 > 0 ? `${Math.round((rr2 / rr1) * 100)} %` : "–"}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">{rr1} / {rr2}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-[var(--text-dim)] mt-2">
+            Mixstapeln: ljusast = nivå A (närmast arbetsmarknaden), mörkast = nivå C. Hållbarheten är en
+            underskattning för nya avtal — sena placeringar hinner inte få uppföljning inom mätfönstret.
+          </p>
+        </section>
+      )}
+
+      {offices.length > 0 && (
+        <section>
+          <h2 className="text-base font-medium mb-1">Kontor</h2>
+          <p className="text-sm text-[var(--text-dim)] mb-3">
+            {offices.length} kontor enligt Arbetsförmedlingens sök leverantör-data.
+          </p>
+          <div className="card p-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2 text-sm">
+            {offices.map((o) => (
+              <div key={o.id} className="py-1">
+                <span className="font-medium">{o.postort ?? "Okänd ort"}</span>
+                {o.adressrad && <span className="text-[var(--text-dim)]"> · {o.adressrad}</span>}
+                {o.nyval_tillatet === false && <span className="text-xs text-[var(--text-faint)]"> · tar ej emot nyval</span>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {ratingPeriods.length > 0 && (
         <section>

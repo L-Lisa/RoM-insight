@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { MarketEvent, PeriodWeights, RomResult, Supplier, SupplierRating } from "@/lib/types";
+import { CloudSeries, MarketEvent, Municipality, Office, PeriodWeights, RomResult, Supplier, SupplierRating } from "@/lib/types";
 
 /**
  * Dataåtkomstlager. Regler:
@@ -184,4 +184,52 @@ export async function getMarketSeries(periods: string[]) {
     });
   }
   return series;
+}
+
+/** Kommun → leveransområde (AF:s leveransområdesdokument, laddad av systerprojektet). */
+export async function getMunicipalities(): Promise<Municipality[]> {
+  const { data } = await supabase
+    .from("delivery_area_municipalities")
+    .select("kommun, delivery_area")
+    .order("kommun")
+    .range(0, 499);
+  return (data ?? []) as Municipality[];
+}
+
+export async function getAreaMunicipalities(area: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("delivery_area_municipalities")
+    .select("kommun")
+    .eq("delivery_area", area)
+    .order("kommun");
+  return (data ?? []).map((r) => r.kommun as string);
+}
+
+/** Leverantörens kontor (AF:s sök-leverantör-data via systerprojektet). */
+export async function getSupplierOffices(supplierId: number): Promise<Office[]> {
+  const { data } = await supabase
+    .from("offices")
+    .select("id, supplier_name, supplier_id, adressrad, postnummer, postort, latitude, longitude, nyval_tillatet")
+    .eq("supplier_id", supplierId)
+    .order("postort")
+    .range(0, 499);
+  return (data ?? []) as Office[];
+}
+
+/** Alla avtalsserier (kompakt) för konstellationsmolnet. */
+export async function getAllCloudSeries(periods: string[]): Promise<CloudSeries[]> {
+  const byKey = new Map<string, CloudSeries>();
+  for (let i = 0; i < periods.length; i++) {
+    const rows = await getPeriodRows(periods[i]);
+    for (const r of rows) {
+      const key = `${r.supplier}|${r.delivery_area}`;
+      let s = byKey.get(key);
+      if (!s) {
+        s = { supplier: r.supplier, delivery_area: r.delivery_area, values: new Array(periods.length).fill(null) };
+        byKey.set(key, s);
+      }
+      s.values[i] = r.weighted_score !== null ? Math.round(r.weighted_score * 1000) / 1000 : null;
+    }
+  }
+  return Array.from(byKey.values());
 }

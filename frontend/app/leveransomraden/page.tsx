@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import { DataStamp } from "@/components/DataStamp";
-import { getLatestPeriod, getPeriodRows } from "@/lib/queries";
+import { getLatestPeriod, getMunicipalities, getPeriodRows } from "@/lib/queries";
+import { KommunSearch } from "@/components/KommunSearch";
 import { formatScore } from "@/lib/format";
 
 export const revalidate = 3600;
@@ -15,7 +16,10 @@ export const metadata = {
 
 export default async function AreasPage() {
   const latest = await getLatestPeriod();
-  const rows = latest ? await getPeriodRows(latest) : [];
+  const [rows, municipalities] = await Promise.all([
+    latest ? getPeriodRows(latest) : Promise.resolve([]),
+    getMunicipalities(),
+  ]);
 
   const areas = new Map<string, { count: number; scores: number[]; risk: number; participants: number }>();
   for (const r of rows) {
@@ -48,6 +52,8 @@ export default async function AreasPage() {
         </p>
         <div className="mt-2"><DataStamp period={latest} note="snitt per område är RoM Insights beräkning (oviktat medel av avtalens viktade resultat)" /></div>
       </div>
+
+      <KommunSearch municipalities={municipalities} />
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">

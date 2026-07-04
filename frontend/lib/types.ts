@@ -74,3 +74,27 @@ export interface ContractSeries {
   delivery_area: string;
   points: { period: string; weighted_score: number | null; rating: number | null }[];
 }
+
+export interface Office {
+  id: number;
+  supplier_name: string;
+  supplier_id: number | null;
+  adressrad: string | null;
+  postnummer: string | null;
+  postort: string | null;
+  latitude: number;
+  longitude: number;
+  nyval_tillatet: boolean | null;
+}
+
+export interface Municipality {
+  kommun: string;
+  delivery_area: string;
+}
+
+/** Kompakt serie för konstellationsmolnet: ett värde per period (null = fanns ej). */
+export interface CloudSeries {
+  supplier: string;
+  delivery_area: string;
+  values: (number | null)[];
+}

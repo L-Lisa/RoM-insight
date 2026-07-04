@@ -45,6 +45,14 @@ export const explain: Record<string, TwoLayerText> = {
     af: "Percentilen är RoM Insights beräkning: avtalets viktade resultatmått rankat mot samtliga avtal i samma period. Detta är inte ett AF-mått.",
     plain: "På ren svenska: \"bättre än 78 % av alla avtal\" säger mer än \"0,32\". Vår beräkning, gjord på AF:s siffror — metoden finns beskriven på metodsidan.",
   },
+  hallbarhet: {
+    af: "RR1 = första godkända resultatredovisningen (deltagaren fick arbete eller började studera). RR2 = godkänd uppföljningsredovisning för samma placering, senare i tid.",
+    plain: "På ren svenska: hur stor andel av de första resultaten som följts av ett godkänt uppföljningsresultat i samma mätfönster — grovt: håller jobben i sig? RoM Insights beräkning (RR2 ÷ RR1) på AF:s siffror. Sena placeringar hinner inte alltid få sin uppföljning inom fönstret, så kvoten är en underskattning snarare än en överskattning.",
+  },
+  deltagarmix: {
+    af: "AF delar in deltagare i nivå A, B och C efter bedömt avstånd till arbetsmarknaden, där C står längst ifrån.",
+    plain: "På ren svenska: vilka grupper leverantören faktiskt jobbar med. En hög andel C betyder ett svårare uppdrag — det är därför viktningen finns. Andelarna är AF:s egna deltagartal per nivå.",
+  },
 };
 
 /** Bakåtkompatibla en-lagers-texter (används där ytan är för liten för två lager). */

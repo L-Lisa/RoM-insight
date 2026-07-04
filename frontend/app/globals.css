@@ -89,3 +89,28 @@ a.link:hover {
   user-select: none;
   pointer-events: none;
 }
+
+/* C4: utskrift/PDF — ljus, ren rapport utan navigation */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --bg-raised: #ffffff;
+    --bg-card: #ffffff;
+    --bg-hover: #ffffff;
+    --line: #cbd2e0;
+    --line-soft: #e2e6ef;
+    --text: #111827;
+    --text-dim: #4b5563;
+    --text-faint: #6b7280;
+  }
+  header, footer, .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff;
+    color: #111827;
+  }
+  .card {
+    break-inside: avoid;
+  }
+}
