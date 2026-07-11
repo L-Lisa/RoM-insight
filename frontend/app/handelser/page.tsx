@@ -1,15 +1,27 @@
 import Link from "next/link";
 import { DataStamp } from "@/components/DataStamp";
-import { diffPeriods, getPeriodRows, getPeriods } from "@/lib/queries";
+import { Tooltip } from "@/components/Tooltip";
+import { explain } from "@/lib/tooltips";
+import {
+  diffPeriods,
+  diffRadar,
+  getNameVariants,
+  getPeriodRows,
+  getPeriods,
+  getRadarDates,
+  getRadarRows,
+  getSuppliers,
+  radarMissingSuppliers,
+} from "@/lib/queries";
 import { periodLabel, slugify } from "@/lib/format";
-import { MarketEvent } from "@/lib/types";
+import { MarketEvent, RadarEvent } from "@/lib/types";
 
 export const revalidate = 3600;
 
 export const metadata = {
-  title: "Händelser",
+  title: "Händelser & Radarn",
   description:
-    "Händelseloggen för Rusta och matcha-marknaden: betygsändringar, nya avtal, avtal som lämnat statistiken och AF:s riskflaggor — period för period.",
+    "Händelseloggen för Rusta och matcha-marknaden: betygsändringar, nya avtal, avtal som lämnat statistiken — och Radarn, som bevakar vilka leverantörer som syns i Arbetsförmedlingens söktjänst.",
 };
 
 const TYPE_META: Record<MarketEvent["type"], { label: string; color: string }> = {
@@ -20,6 +32,18 @@ const TYPE_META: Record<MarketEvent["type"], { label: string; color: string }> =
   risk_off: { label: "Risk borta", color: "var(--text-dim)" },
 };
 
+const RADAR_META: Record<RadarEvent["type"], { label: string; color: string }> = {
+  radar_left: { label: "Borta från radarn", color: "var(--terminated)" },
+  radar_entered: { label: "Ny på radarn", color: "var(--positive)" },
+  radar_offices: { label: "Kontor ändrat", color: "var(--compare-1)" },
+  radar_nyval_off: { label: "Nyval pausat", color: "var(--risk)" },
+  radar_nyval_on: { label: "Nyval öppet igen", color: "var(--text-dim)" },
+};
+
+function radarDateLabel(d: string): string {
+  return new Date(`${d}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" });
+}
+
 export default async function EventsPage() {
   const periods = await getPeriods();
   const allRows = await Promise.all(periods.map((p) => getPeriodRows(p)));
@@ -29,6 +53,22 @@ export default async function EventsPage() {
     const events = diffPeriods(allRows[i - 1], allRows[i], periods[i - 1], periods[i]);
     byTransition.push({ period: periods[i], prevPeriod: periods[i - 1], events });
   }
+
+  // Radarn: senaste snapshot + diff mot föregående + korskoll mot statistiken
+  const radarDates = await getRadarDates();
+  const latestRadar = radarDates.length ? radarDates[radarDates.length - 1] : null;
+  const prevRadar = radarDates.length > 1 ? radarDates[radarDates.length - 2] : null;
+  const [latestRadarRows, prevRadarRows, suppliers, variants] = await Promise.all([
+    latestRadar ? getRadarRows(latestRadar) : Promise.resolve([]),
+    prevRadar ? getRadarRows(prevRadar) : Promise.resolve([]),
+    getSuppliers(),
+    getNameVariants(),
+  ]);
+  const radarEvents = prevRadar ? diffRadar(prevRadarRows, latestRadarRows) : [];
+  const latestStatsRows = allRows[allRows.length - 1] ?? [];
+  const missing = latestRadar
+    ? radarMissingSuppliers(latestStatsRows, latestRadarRows, suppliers, variants)
+    : [];
 
   return (
     <div className="space-y-8">
@@ -41,6 +81,94 @@ export default async function EventsPage() {
         </p>
         <div className="mt-2"><DataStamp period={periods[periods.length - 1] ?? null} /></div>
       </div>
+
+      {latestRadar && (
+        <section className="card p-5 space-y-4">
+          <div>
+            <h2 className="text-base font-medium flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full" style={{ background: "var(--signal)" }} aria-hidden />
+              <Tooltip label="Radarn" layers={explain.radarn} />
+              <span className="text-[var(--text-dim)] font-normal">— vem syns i AF:s söktjänst?</span>
+            </h2>
+            <p className="text-sm text-[var(--text-dim)] mt-1 max-w-2xl">
+              Statistikfilerna släpar upp till två månader. Söktjänsten — listan arbetssökande väljer leverantör
+              ur — ändras när Arbetsförmedlingen agerar. Radarn jämför dem: {latestRadarRows.length} leverantörer
+              med {latestRadarRows.reduce((s, r) => s + r.offices_count, 0)} kontor syntes vid kontrollen{" "}
+              {radarDateLabel(latestRadar)}.
+            </p>
+          </div>
+
+          {missing.length > 0 && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">
+                {missing.length} leverantörer har avtal i statistiken ({periodLabel(periods[periods.length - 1])})
+                men syntes inte i söktjänsten
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {missing.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/leverantorer/${s.slug}`}
+                    className="text-xs px-2.5 py-1 rounded-[var(--radius-badge)] border transition-colors hover:bg-[var(--bg-hover)]"
+                    style={{ borderColor: "var(--line)", color: "var(--text)" }}
+                  >
+                    {s.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {radarEvents.length > 0 && prevRadar && (
+            <div>
+              <h3 className="text-sm font-medium mb-2">
+                Sedan förra kollen ({radarDateLabel(prevRadar)} → {radarDateLabel(latestRadar)})
+              </h3>
+              <div className="divide-y divide-[var(--line-soft)] border border-[var(--line-soft)] rounded-lg max-h-[360px] overflow-y-auto">
+                {radarEvents
+                  .sort((a, b) => a.supplier_name.localeCompare(b.supplier_name, "sv"))
+                  .map((e, i) => {
+                    const meta = RADAR_META[e.type];
+                    const sup = e.supplier_id !== null ? suppliers.find((s) => s.id === e.supplier_id) : undefined;
+                    return (
+                      <div key={i} className="flex items-center gap-3 px-4 py-2.5 text-sm">
+                        <span
+                          className="shrink-0 text-xs px-2 py-0.5 rounded-[var(--radius-badge)] border"
+                          style={{ color: meta.color, borderColor: meta.color, opacity: 0.9 }}
+                        >
+                          {meta.label}
+                        </span>
+                        {sup ? (
+                          <Link href={`/leverantorer/${sup.slug}`} className="hover:text-[var(--compare-1)] truncate">
+                            {e.supplier_name}
+                          </Link>
+                        ) : (
+                          <span className="truncate">{e.supplier_name}</span>
+                        )}
+                        <span className="ml-auto text-[var(--text-dim)] text-xs shrink-0">{e.detail}</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs text-[var(--text-dim)] leading-relaxed max-w-2xl">
+            Varför försvinner någon ur söktjänsten? Arbetsförmedlingen publicerar inte orsaken. Det kan vara avtal
+            som löpt ut, eget utträde, ett namnbyte vi ännu inte kartlagt — eller hävning. Vi påstår inget i det
+            enskilda fallet; när AF själva publicerar ett besked länkar vi det. Kolla gärna själv i{" "}
+            <a
+              href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
+              className="link"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              AF:s söktjänst
+            </a>
+            . Metoden beskrivs på <Link href="/metod" className="link">metodsidan</Link>.
+          </p>
+        </section>
+      )}
 
       {byTransition.map(({ period, prevPeriod, events }) => {
         const counts = events.reduce<Record<string, number>>((acc, e) => {

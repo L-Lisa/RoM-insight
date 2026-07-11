@@ -4,16 +4,18 @@ import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import { TrendChart } from "@/components/TrendChart";
 import { PercentileBar } from "@/components/PercentileBar";
-import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
+import { RatingBadge, RiskBadge, DirectionArrow, ScoreBar } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import { WhatIsNeeded } from "@/components/WhatIsNeeded";
 import { PrintButton } from "@/components/PrintButton";
 import {
   getLatestPeriod,
+  getNameVariants,
   getPeriodRows,
   getPeriodWeights,
   getSupplierBySlug,
   getSupplierOffices,
+  getSupplierRadarStatus,
   getSupplierRatingHistory,
   getSupplierResults,
   getSuppliers,
@@ -58,13 +60,15 @@ export default async function SupplierPage({ params }: Props) {
   if (!sup) notFound();
   const name = sup.name;
 
-  const [rows, ratings, latestPeriod, offices] = await Promise.all([
+  const [rows, ratings, latestPeriod, offices, variants] = await Promise.all([
     getSupplierResults(name),
     getSupplierRatingHistory(name),
     getLatestPeriod(),
     getSupplierOffices(sup.id),
+    getNameVariants(),
   ]);
   if (!rows.length) notFound();
+  const radarStatus = await getSupplierRadarStatus(sup, variants);
 
   const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
   const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
@@ -130,6 +134,27 @@ export default async function SupplierPage({ params }: Props) {
         <div className="mt-2"><DataStamp period={isExited ? lastSeen : latestPeriod} /></div>
       </div>
 
+      {!isExited && radarStatus && !radarStatus.present && (
+        <div className="card p-4 text-sm leading-relaxed">
+          <span className="mono-label block mb-1">
+            <Tooltip label="Radarn" layers={explain.radarn} />
+          </span>
+          Syntes inte i Arbetsförmedlingens söktjänst vid senaste kontrollen (
+          {new Date(`${radarStatus.checked}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })}
+          ), trots avtal i senaste statistiken. AF publicerar inte orsaken — det kan vara avtal som löpt ut, eget
+          utträde, namnbyte eller hävning. Kolla själv i{" "}
+          <a
+            href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
+            className="link"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            AF:s söktjänst
+          </a>
+          . <Link href="/handelser" className="link">Mer i Radarn →</Link>
+        </div>
+      )}
+
       {!isExited && biggest?.insight.text && (
         <div className="card p-4 text-sm leading-relaxed">
           <span className="mono-label block mb-1">Läget just nu <DirectionArrow direction={biggest.insight.direction} /></span>
@@ -162,7 +187,9 @@ export default async function SupplierPage({ params }: Props) {
               {areas.map(({ area, latest, insight }) => (
                 <tr key={area} className="hover:bg-[var(--bg-hover)] transition-colors">
                   <td className="px-4 py-3">{area}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{formatScore(latest.weighted_score)}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className="inline-flex justify-end"><ScoreBar score={latest.weighted_score} /></span>
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
                     {latest.dataset_date === latestPeriod && latest.weighted_score !== null
                       ? `${percentileOf(latest.weighted_score, allScores)} %`
@@ -300,7 +327,7 @@ export default async function SupplierPage({ params }: Props) {
             <table className="w-full text-sm min-w-[760px]">
               <thead className="text-left">
                 <tr className="border-b border-[var(--line)]">
-                  <th className="mono-label px-4 py-3 font-normal">Område</th>
+                  <th className="mono-label px-4 py-3 font-normal sticky left-0 z-10" style={{ background: "var(--bg-card)" }}>Område</th>
                   {ratingPeriods.map((p) => (
                     <th key={p} className="mono-label px-2 py-3 font-normal text-center">{periodShort(p)}</th>
                   ))}
@@ -309,12 +336,26 @@ export default async function SupplierPage({ params }: Props) {
               <tbody className="divide-y divide-[var(--line-soft)]">
                 {ratingAreas.map((area) => (
                   <tr key={area}>
-                    <td className="px-4 py-2.5">{area}</td>
+                    <td className="px-4 py-2.5 sticky left-0 z-10" style={{ background: "var(--bg-card)" }}>{area}</td>
                     {ratingPeriods.map((p) => {
                       const cell = ratings.find((r) => r.delivery_area === area && r.period === p);
                       return (
                         <td key={p} className="px-2 py-2.5 text-center tabular-nums">
-                          {cell ? (cell.rating ?? <span className="text-[var(--text-faint)]" title="Ej betygsatt ännu">·</span>) : <span className="text-[var(--text-faint)]">–</span>}
+                          {cell ? (
+                            cell.rating !== null ? (
+                              // Heatmap: betyg = fyllnadsnivå av EN nyans (kravprofil §4e), siffran kvar för exakthet.
+                              // rgba = --rating-fill (#7c96f5); opacitet 1→0,24 … 4→0,66
+                              <span
+                                className="inline-flex w-7 h-6 items-center justify-center rounded-[4px]"
+                                aria-label={`Betyg ${cell.rating} av 4`}
+                                style={{ background: `rgba(124, 150, 245, ${0.1 + cell.rating * 0.14})` }}
+                              >
+                                {cell.rating}
+                              </span>
+                            ) : (
+                              <span className="text-[var(--text-faint)]" title="Ej betygsatt ännu">·</span>
+                            )
+                          ) : <span className="text-[var(--text-faint)]">–</span>}
                         </td>
                       );
                     })}

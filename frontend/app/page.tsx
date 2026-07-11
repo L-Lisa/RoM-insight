@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
-import { RatingBadge, RiskBadge } from "@/components/Badges";
+import { RatingBadge, RiskBadge, ScoreBar } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import { MarketChart } from "@/components/MarketChart";
 import {
@@ -187,7 +187,9 @@ function LeaderboardTable({ rows, startRank }: { rows: RomResult[]; startRank?: 
                 </Link>
               </td>
               <td className="px-4 py-3 text-[var(--text-dim)]">{row.delivery_area}</td>
-              <td className="px-4 py-3 text-right tabular-nums">{formatScore(row.weighted_score)}</td>
+              <td className="px-4 py-3 text-right">
+                <span className="inline-flex justify-end"><ScoreBar score={row.weighted_score} /></span>
+              </td>
               <td className="px-4 py-3 text-right"><RatingBadge rating={row.rating} /></td>
               <td className="px-4 py-3 text-center"><RiskBadge risk={row.risk_of_termination} /></td>
             </tr>

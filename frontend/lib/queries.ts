@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { CloudSeries, MarketEvent, Municipality, Office, PeriodWeights, RomResult, Supplier, SupplierRating } from "@/lib/types";
+import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, PeriodWeights, RadarEvent, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "@/lib/types";
 
 /**
  * Dataåtkomstlager. Regler:
@@ -214,6 +214,143 @@ export async function getSupplierOffices(supplierId: number): Promise<Office[]> 
     .order("postort")
     .range(0, 499);
   return (data ?? []) as Office[];
+}
+
+/**
+ * Radarn: ögonblicksbilder av AF:s sök leverantör-tjänst (vår additiva tabell).
+ * Statistikfilerna släpar upp till två månader; söktjänsten ändras när AF agerar.
+ */
+export async function getRadarDates(): Promise<string[]> {
+  const dates: string[] = [];
+  let cursor: string | null = null;
+  for (;;) {
+    let q = supabase
+      .from("sokleverantor_snapshots")
+      .select("snapshot_date")
+      .order("snapshot_date", { ascending: true })
+      .limit(1);
+    if (cursor) q = q.gt("snapshot_date", cursor);
+    const { data } = await q;
+    if (!data?.length) break;
+    cursor = data[0].snapshot_date as string;
+    dates.push(cursor);
+  }
+  return dates;
+}
+
+export async function getRadarRows(date: string): Promise<RadarSnapshotRow[]> {
+  const out: RadarSnapshotRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase
+      .from("sokleverantor_snapshots")
+      .select("snapshot_date, af_leverantor_id, supplier_name, supplier_id, offices_count, any_nyval")
+      .eq("snapshot_date", date)
+      .order("af_leverantor_id", { ascending: true })
+      .range(from, from + 999);
+    out.push(...((data ?? []) as RadarSnapshotRow[]));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+export async function getNameVariants(): Promise<NameVariant[]> {
+  const { data } = await supabase.from("supplier_name_variants").select("variant, supplier_id").range(0, 999);
+  return (data ?? []) as NameVariant[];
+}
+
+/** Radar-diff mellan två snapshots, nycklad på AF:s leverantörs-id (namnbytessäker). */
+export function diffRadar(prev: RadarSnapshotRow[], curr: RadarSnapshotRow[]): RadarEvent[] {
+  const prevMap = new Map(prev.map((r) => [r.af_leverantor_id, r]));
+  const currMap = new Map(curr.map((r) => [r.af_leverantor_id, r]));
+  const events: RadarEvent[] = [];
+  for (const [id, c] of currMap) {
+    const p = prevMap.get(id);
+    if (!p) {
+      events.push({
+        type: "radar_entered", supplier_name: c.supplier_name, supplier_id: c.supplier_id,
+        detail: `${c.offices_count} kontor`,
+      });
+      continue;
+    }
+    if (p.offices_count !== c.offices_count) {
+      events.push({
+        type: "radar_offices", supplier_name: c.supplier_name, supplier_id: c.supplier_id,
+        detail: `Kontor ${p.offices_count} → ${c.offices_count}`,
+      });
+    }
+    if (p.any_nyval !== c.any_nyval) {
+      events.push({
+        type: c.any_nyval ? "radar_nyval_on" : "radar_nyval_off",
+        supplier_name: c.supplier_name, supplier_id: c.supplier_id,
+        detail: c.any_nyval ? "Tar emot nyval igen" : "Tar inte längre emot nyval",
+      });
+    }
+  }
+  for (const [id, p] of prevMap) {
+    if (!currMap.has(id)) {
+      events.push({
+        type: "radar_left", supplier_name: p.supplier_name, supplier_id: p.supplier_id,
+        detail: `${p.offices_count} kontor i förra kollen`,
+      });
+    }
+  }
+  return events;
+}
+
+/**
+ * Leverantörer med avtal i statistiken som inte syns i radar-snapshotten.
+ * Matchar via supplier_id, kanoniskt namn OCH kända namnvarianter åt båda hållen —
+ * ett namnbyte får aldrig se ut som en försvunnen leverantör.
+ */
+export function radarMissingSuppliers(
+  statsRows: RomResult[],
+  radar: RadarSnapshotRow[],
+  suppliers: Supplier[],
+  variants: NameVariant[],
+): Supplier[] {
+  const radarIds = new Set(radar.map((r) => r.supplier_id).filter((v): v is number => v !== null));
+  const radarNames = new Set(radar.map((r) => r.supplier_name.toLowerCase()));
+  const byId = new Map(suppliers.map((s) => [s.id, s]));
+  const variantsBySupplier = new Map<number, string[]>();
+  const supplierByVariant = new Map<string, number>();
+  for (const v of variants) {
+    variantsBySupplier.set(v.supplier_id, [...(variantsBySupplier.get(v.supplier_id) ?? []), v.variant.toLowerCase()]);
+    supplierByVariant.set(v.variant.toLowerCase(), v.supplier_id);
+  }
+  const statsNames = new Set(statsRows.map((r) => r.supplier));
+  return suppliers
+    .filter((s) => {
+      if (!statsNames.has(s.name)) return false;
+      if (radarIds.has(s.id)) return false;
+      if (radarNames.has(s.name.toLowerCase())) return false;
+      // Egen variant syns i söktjänsten?
+      if ((variantsBySupplier.get(s.id) ?? []).some((v) => radarNames.has(v))) return false;
+      // Statistiknamnet är en variant av annan leverantör vars kanoniska namn syns?
+      const canonicalId = supplierByVariant.get(s.name.toLowerCase());
+      if (canonicalId !== undefined) {
+        const canonical = byId.get(canonicalId);
+        if (canonical && (radarIds.has(canonical.id) || radarNames.has(canonical.name.toLowerCase()))) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+}
+
+/** Syns leverantören i senaste radar-snapshotten? null = ingen snapshot finns. */
+export async function getSupplierRadarStatus(
+  sup: Supplier,
+  variants: NameVariant[],
+): Promise<{ checked: string; present: boolean } | null> {
+  const dates = await getRadarDates();
+  if (!dates.length) return null;
+  const latest = dates[dates.length - 1];
+  const names = [sup.name, ...variants.filter((v) => v.supplier_id === sup.id).map((v) => v.variant)];
+  const [byId, byName] = await Promise.all([
+    supabase.from("sokleverantor_snapshots").select("id").eq("snapshot_date", latest).eq("supplier_id", sup.id).limit(1),
+    supabase.from("sokleverantor_snapshots").select("id").eq("snapshot_date", latest).in("supplier_name", names).limit(1),
+  ]);
+  const present = Boolean(byId.data?.length || byName.data?.length);
+  return { checked: latest, present };
 }
 
 /** Alla avtalsserier (kompakt) för konstellationsmolnet. */
