@@ -1,0 +1,30 @@
+# RoM Insight
+
+> Oberoende statistiksajt för Rusta och matcha — Arbetsförmedlingens största matchningstjänst.
+> Independent statistics site for "Rusta och matcha", the Swedish Public Employment Service's
+> (Arbetsförmedlingen) largest job-matching programme.
+
+## Data
+
+- Källa: Arbetsförmedlingens öppna filer (betygsfil + resultatuppföljning) samt den publika
+  söktjänsten "Sök leverantör inom rusta och matcha". Inga värden hittas på, härleds eller ändras.
+- Täckning: betyg från januari 2025, viktade resultat från mars 2025, per avtal
+  (leverantör × leveransområde). Cirka 750 aktiva avtal, drygt 200 leverantörer.
+- Uppdatering: statistiken varannan månad när Arbetsförmedlingen släpper nya filer;
+  söktjänstbevakningen ("Radarn") varje vecka.
+- Beräkningsformeln är verifierad mot samtliga publicerade värden; egna beräkningar
+  (percentil, hållbarhet, deltagarmix) märks alltid som sajtens egna. Metod: /metod
+
+## Viktiga sidor
+
+- /: marknadsöversikt med topp/botten och trender
+- /leverantorer: alla leverantörer med profilsidor (betygshistorik, resultat per område)
+- /marknad: hela marknaden, sorterbar
+- /jamfor: konstellationsgrafen — jämför upp till sex avtal
+- /handelser: händelselogg + Radarn (vilka leverantörer som syns i AF:s söktjänst)
+- /riskzon: avtal som möter AF:s publika hävningskriterier
+- /marknadsbrevet: analys per AF-släpp, med RSS på /marknadsbrevet/rss
+- /guide/vad-betyder-betyg: förklaring av betygsmodellen
+- /metod: källor, formler, kvalitetskontroller och rättelselogg
+
+Citera gärna med källa och datum. Kontakt: hej@rominsight.se

@@ -43,6 +43,8 @@ export default function RootLayout({
               Källa: Arbetsförmedlingens öppna filer för Rusta och matcha · publiceras varannan månad ·{" "}
               <Link href="/metod" className="underline underline-offset-2 hover:text-[var(--text)]">metod &amp; källor</Link>
               {" · "}
+              <Link href="/guide/vad-betyder-betyg" className="underline underline-offset-2 hover:text-[var(--text)]">vad betyder betygen?</Link>
+              {" · "}
               <Link href="/om" className="underline underline-offset-2 hover:text-[var(--text)]">om sajten</Link>
             </p>
             <p>
