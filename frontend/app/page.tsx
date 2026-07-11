@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
-import { RatingBadge, RiskBadge, ScoreBar } from "@/components/Badges";
+import { RatingBadge, RiskBadge } from "@/components/Badges";
+import { ShowSource } from "@/components/ShowSource";
 import { DataStamp } from "@/components/DataStamp";
 import { MarketChart } from "@/components/MarketChart";
 import {
@@ -9,8 +10,10 @@ import {
   getMarketSeries,
   getPeriodRows,
   getPeriods,
+  getPeriodWeights,
   getTopContracts,
 } from "@/lib/queries";
+import { PeriodWeights } from "@/lib/types";
 import { marketInsight } from "@/lib/insights";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
 import { RomResult } from "@/lib/types";
@@ -24,12 +27,13 @@ export default async function OverviewPage() {
   const latest = periods[periods.length - 1];
   const prev = periods.length > 1 ? periods[periods.length - 2] : null;
 
-  const [top5, bottom5, marketSeries, latestRows, prevRows] = await Promise.all([
+  const [top5, bottom5, marketSeries, latestRows, prevRows, weights] = await Promise.all([
     getTopContracts(latest, 5, false),
     getTopContracts(latest, 5, true),
     getMarketSeries(periods),
     getPeriodRows(latest),
     prev ? getPeriodRows(prev) : Promise.resolve([] as RomResult[]),
+    getPeriodWeights(latest),
   ]);
 
   const suppliers = new Set(latestRows.map((r) => r.supplier)).size;
@@ -88,7 +92,7 @@ export default async function OverviewPage() {
             <h2 className="text-base font-medium">Topp 5 — högst viktat resultat</h2>
             <Link href="/leverantorer" className="text-sm link">Alla leverantörer →</Link>
           </div>
-          <LeaderboardTable rows={top5} startRank={1} />
+          <LeaderboardTable rows={top5} startRank={1} weights={weights} />
         </section>
         <section>
           <div className="flex items-baseline justify-between mb-3">
@@ -97,7 +101,7 @@ export default async function OverviewPage() {
             </h2>
             <span className="text-xs text-[var(--text-dim)]">data, inte dom — se metodsidan</span>
           </div>
-          <LeaderboardTable rows={bottom5} />
+          <LeaderboardTable rows={bottom5} weights={weights} />
         </section>
       </div>
 
@@ -155,7 +159,7 @@ function MoverList({ movers, positive }: { movers: { row: RomResult; delta: numb
   );
 }
 
-function LeaderboardTable({ rows, startRank }: { rows: RomResult[]; startRank?: number }) {
+function LeaderboardTable({ rows, startRank, weights }: { rows: RomResult[]; startRank?: number; weights: PeriodWeights | null }) {
   return (
     <div className="card overflow-hidden">
       <table className="w-full text-sm">
@@ -188,7 +192,7 @@ function LeaderboardTable({ rows, startRank }: { rows: RomResult[]; startRank?: 
               </td>
               <td className="px-4 py-3 text-[var(--text-dim)]">{row.delivery_area}</td>
               <td className="px-4 py-3 text-right">
-                <span className="inline-flex justify-end"><ScoreBar score={row.weighted_score} /></span>
+                <ShowSource row={row} weights={weights} />
               </td>
               <td className="px-4 py-3 text-right"><RatingBadge rating={row.rating} /></td>
               <td className="px-4 py-3 text-center"><RiskBadge risk={row.risk_of_termination} /></td>
