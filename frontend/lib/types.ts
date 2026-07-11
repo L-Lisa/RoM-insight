@@ -98,3 +98,26 @@ export interface CloudSeries {
   delivery_area: string;
   values: (number | null)[];
 }
+
+/** Radarn: en leverantörs tillstånd i AF:s söktjänst vid ett kontrolldatum. */
+export interface RadarSnapshotRow {
+  snapshot_date: string;
+  af_leverantor_id: number;
+  supplier_name: string;
+  supplier_id: number | null;
+  offices_count: number;
+  any_nyval: boolean;
+}
+
+/** Radar-händelse — beräknad ur skillnaden mellan två snapshots. Fakta, aldrig orsak. */
+export interface RadarEvent {
+  type: "radar_left" | "radar_entered" | "radar_offices" | "radar_nyval_off" | "radar_nyval_on";
+  supplier_name: string;
+  supplier_id: number | null;
+  detail: string;
+}
+
+export interface NameVariant {
+  variant: string;
+  supplier_id: number;
+}

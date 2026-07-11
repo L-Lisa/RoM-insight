@@ -53,6 +53,10 @@ export const explain: Record<string, TwoLayerText> = {
     af: "AF delar in deltagare i nivå A, B och C efter bedömt avstånd till arbetsmarknaden, där C står längst ifrån.",
     plain: "På ren svenska: vilka grupper leverantören faktiskt jobbar med. En hög andel C betyder ett svårare uppdrag — det är därför viktningen finns. Andelarna är AF:s egna deltagartal per nivå.",
   },
+  radarn: {
+    af: "Arbetsförmedlingens söktjänst \"Sök leverantör inom rusta och matcha\" visar de leverantörer och kontor arbetssökande kan välja mellan just nu.",
+    plain: "På ren svenska: statistikfilerna släpar upp till två månader, men söktjänsten ändras när något händer. Radarn är RoM Insights återkommande koll av söktjänsten — försvinner en leverantör där syns det här, långt före statistiken. Varför någon försvinner framgår inte av AF:s data, så det påstår vi inget om i det enskilda fallet.",
+  },
 };
 
 /** Bakåtkompatibla en-lagers-texter (används där ytan är för liten för två lager). */

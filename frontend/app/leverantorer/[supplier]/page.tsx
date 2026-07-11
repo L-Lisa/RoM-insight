@@ -10,10 +10,12 @@ import { WhatIsNeeded } from "@/components/WhatIsNeeded";
 import { PrintButton } from "@/components/PrintButton";
 import {
   getLatestPeriod,
+  getNameVariants,
   getPeriodRows,
   getPeriodWeights,
   getSupplierBySlug,
   getSupplierOffices,
+  getSupplierRadarStatus,
   getSupplierRatingHistory,
   getSupplierResults,
   getSuppliers,
@@ -58,13 +60,15 @@ export default async function SupplierPage({ params }: Props) {
   if (!sup) notFound();
   const name = sup.name;
 
-  const [rows, ratings, latestPeriod, offices] = await Promise.all([
+  const [rows, ratings, latestPeriod, offices, variants] = await Promise.all([
     getSupplierResults(name),
     getSupplierRatingHistory(name),
     getLatestPeriod(),
     getSupplierOffices(sup.id),
+    getNameVariants(),
   ]);
   if (!rows.length) notFound();
+  const radarStatus = await getSupplierRadarStatus(sup, variants);
 
   const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
   const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
@@ -129,6 +133,19 @@ export default async function SupplierPage({ params }: Props) {
         </p>
         <div className="mt-2"><DataStamp period={isExited ? lastSeen : latestPeriod} /></div>
       </div>
+
+      {!isExited && radarStatus && !radarStatus.present && (
+        <div className="card p-4 text-sm leading-relaxed">
+          <span className="mono-label block mb-1">
+            <Tooltip label="Radarn" layers={explain.radarn} />
+          </span>
+          Syntes inte i Arbetsförmedlingens söktjänst vid senaste kontrollen (
+          {new Date(`${radarStatus.checked}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })}
+          ), trots avtal i senaste statistiken. AF publicerar inte orsaken — det kan vara avtal som löpt ut, eget
+          utträde, namnbyte eller hävning.{" "}
+          <Link href="/handelser" className="link">Mer i Radarn →</Link>
+        </div>
+      )}
 
       {!isExited && biggest?.insight.text && (
         <div className="card p-4 text-sm leading-relaxed">

@@ -68,6 +68,14 @@ export default async function MethodPage() {
             Skillnaden mellan två på varandra följande släpp: betygsändringar, nya avtal, avtal som lämnat
             statistiken. Varför ett avtal lämnat statistiken framgår inte av filerna, så vi anger ingen orsak.
           </Term>
+          <Term t="Radarn (vår bevakning av söktjänsten)">
+            Återkommande ögonblicksbilder av Arbetsförmedlingens söktjänst &quot;Sök leverantör inom rusta och
+            matcha&quot; — de leverantörer och kontor arbetssökande kan välja mellan just nu. Statistikfilerna släpar
+            upp till två månader; söktjänsten ändras när AF agerar, och Radarn gör skillnaden synlig. Att en
+            leverantör försvinner ur söktjänsten kan bero på avtal som löpt ut, eget utträde, namnbyte eller
+            hävning — AF publicerar inte orsaken och vi påstår ingen. Namnbyten matchas mot vår
+            namnvariantlista innan något visas som försvunnet. Varje kontroll anges med datum.
+          </Term>
         </dl>
       </Section>
 
