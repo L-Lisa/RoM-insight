@@ -1,5 +1,6 @@
 import { PeriodWeights, RomResult } from "@/lib/types";
 import { formatScore, periodLabel } from "@/lib/format";
+import { WhatIfSlider } from "@/components/WhatIfSlider";
 
 /**
  * T5 "Vad krävs?" — riskzonen som handling, inte bara varning.
@@ -70,6 +71,13 @@ export function WhatIsNeeded({
                 fler om de kommer i nivå A (väger {weights.weight_a.toFixed(2).replace(".", ",")}).
                 Både RR1 och RR2 räknas.
               </p>
+              <WhatIfSlider
+                currentWeightedSum={currentWeightedSum}
+                participants={c.participants}
+                weights={weights}
+                start={fewest}
+                max={most + 10}
+              />
               <p className="text-xs text-[var(--text-dim)] mt-2">
                 Beräkningsgrund: resultatmått = (RR1+RR2, viktade per nivå A/B/C) ÷ (2 × antal deltagare), med vikterna för{" "}
                 {periodLabel(period)} ur Arbetsförmedlingens beräkningsfil. Formeln är verifierad mot
