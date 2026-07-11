@@ -16,7 +16,10 @@ export function Tooltip({
   className?: string;
 }) {
   return (
-    <span className={`relative group inline-flex items-center gap-1 cursor-help ${className ?? ""}`}>
+    <span
+      className={`relative group inline-flex items-center gap-1 cursor-help focus:outline-none ${className ?? ""}`}
+      tabIndex={0}
+    >
       {label}
       <span className="text-[var(--text-faint)] group-hover:text-[var(--text-dim)] transition-colors" aria-hidden>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -25,7 +28,7 @@ export function Tooltip({
         </svg>
       </span>
       <span
-        className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-80 rounded-lg px-4 py-3 text-xs font-normal normal-case tracking-normal opacity-0 group-hover:opacity-100 transition-opacity duration-150 shadow-xl whitespace-normal text-left leading-relaxed border border-[var(--line)]"
+        className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-80 rounded-lg px-4 py-3 text-xs font-normal normal-case tracking-normal opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-150 shadow-xl whitespace-normal text-left leading-relaxed border border-[var(--line)]"
         style={{ background: "var(--bg-raised)", color: "var(--text)" }}
         role="tooltip"
       >

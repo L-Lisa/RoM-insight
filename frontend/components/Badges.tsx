@@ -1,5 +1,6 @@
 import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
+import { formatScore } from "@/lib/format";
 
 /**
  * Färgsemantik (kravprofil §4e):
@@ -36,6 +37,30 @@ export function RatingBadge({ rating }: { rating: number | null }) {
         ))}
       </span>
       <span className="text-sm">{rating}</span>
+    </span>
+  );
+}
+
+/** Viktat resultat med stapel — samma skala som konstellationsgrafen (kapad vid 0,7)
+ *  så att stapellängder är jämförbara mellan vyer. */
+export function ScoreBar({ score }: { score: number | null }) {
+  if (score === null || score === undefined) {
+    return <span className="text-[var(--text-faint)]">–</span>;
+  }
+  const w = Math.min(score / 0.7, 1) * 100;
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span
+        className="h-1.5 w-14 rounded-full overflow-hidden shrink-0"
+        style={{ background: "var(--line-soft)" }}
+        aria-hidden
+      >
+        <span
+          className="block h-full rounded-full"
+          style={{ width: `${w}%`, background: "var(--rating-fill)", opacity: 0.85 }}
+        />
+      </span>
+      <span className="tabular-nums">{formatScore(score)}</span>
     </span>
   );
 }
