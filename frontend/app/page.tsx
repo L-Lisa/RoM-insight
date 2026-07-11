@@ -5,6 +5,7 @@ import { RatingBadge, RiskBadge } from "@/components/Badges";
 import { CompareButton } from "@/components/CompareButton";
 import { ShowSource } from "@/components/ShowSource";
 import { DataStamp } from "@/components/DataStamp";
+import { HomeConstellation } from "@/components/HomeConstellation";
 import { MarketChart } from "@/components/MarketChart";
 import {
   diffPeriods,
@@ -79,6 +80,18 @@ export default async function OverviewPage() {
         <StatCard label="Leveransområden" value={String(new Set(latestRows.map((r) => r.delivery_area)).size)} />
         <StatCard label="Ej betygsatta ännu" value={`${Math.round((unrated / latestRows.length) * 100)} %`} sub={`${unrated} avtal`} />
       </div>
+
+      <section className="card p-5">
+        <div className="flex items-baseline justify-between mb-1">
+          <h2 className="text-base font-medium">Konstellationen — hela marknaden på en gång</h2>
+          <Link href="/jamfor" className="text-sm link">Jämför avtal →</Link>
+        </div>
+        <p className="text-sm text-[var(--text-dim)] mb-4 max-w-3xl">
+          Varje linje är ett avtal (leverantör × område). Sök en leverantör för att lysa upp deras avtal mot
+          resten av marknaden, eller klicka direkt i molnet.
+        </p>
+        <HomeConstellation periods={periods} initialKeys={top5.map((r) => `${r.supplier}|${r.delivery_area}`)} />
+      </section>
 
       <section className="card p-5">
         <h2 className="text-base font-medium mb-1">Marknadens utveckling</h2>

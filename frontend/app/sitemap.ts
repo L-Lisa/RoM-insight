@@ -3,7 +3,7 @@ import { getLatestPeriod, getPeriodRows, getSuppliers } from "@/lib/queries";
 
 export const revalidate = 3600;
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rominsight.vercel.app";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ro-m-insight.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [suppliers, latest] = await Promise.all([getSuppliers(), getLatestPeriod()]);
@@ -22,6 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/marknadsbrevet`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/metod`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE}/om`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${BASE}/guide/vad-betyder-betyg`, changeFrequency: "monthly", priority: 0.8 },
     ...suppliers.map((s) => ({
       url: `${BASE}/leverantorer/${s.slug}`,
       changeFrequency: "weekly" as const,
