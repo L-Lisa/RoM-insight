@@ -81,6 +81,12 @@ export async function getPeriodWeights(period: string): Promise<PeriodWeights | 
   return (data as PeriodWeights) ?? null;
 }
 
+/** Alla periodvikter (≤ ett tiotal rader) — för källpaneler över blandade perioder. */
+export async function getAllPeriodWeights(): Promise<PeriodWeights[]> {
+  const { data } = await supabase.from("period_weights").select("*").order("period").range(0, 99);
+  return (data ?? []) as PeriodWeights[];
+}
+
 export async function getSuppliers(): Promise<Supplier[]> {
   const { data } = await supabase.from("suppliers").select("*").order("name").range(0, 999);
   return (data ?? []) as Supplier[];

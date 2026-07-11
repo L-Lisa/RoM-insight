@@ -4,11 +4,13 @@ import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import { TrendChart } from "@/components/TrendChart";
 import { PercentileBar } from "@/components/PercentileBar";
-import { RatingBadge, RiskBadge, DirectionArrow, ScoreBar } from "@/components/Badges";
+import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import { WhatIsNeeded } from "@/components/WhatIsNeeded";
 import { PrintButton } from "@/components/PrintButton";
+import { ShowSource } from "@/components/ShowSource";
 import {
+  getAllPeriodWeights,
   getLatestPeriod,
   getNameVariants,
   getPeriodRows,
@@ -72,6 +74,7 @@ export default async function SupplierPage({ params }: Props) {
 
   const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
   const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
+  const weightsByPeriod = new Map((await getAllPeriodWeights()).map((w) => [w.period, w]));
   const allScores = latestAll
     .map((r) => r.weighted_score)
     .filter((v): v is number => v !== null && v !== undefined);
@@ -188,7 +191,7 @@ export default async function SupplierPage({ params }: Props) {
                 <tr key={area} className="hover:bg-[var(--bg-hover)] transition-colors">
                   <td className="px-4 py-3">{area}</td>
                   <td className="px-4 py-3 text-right">
-                    <span className="inline-flex justify-end"><ScoreBar score={latest.weighted_score} /></span>
+                    <ShowSource row={latest} weights={weightsByPeriod.get(latest.dataset_date) ?? null} />
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
                     {latest.dataset_date === latestPeriod && latest.weighted_score !== null
