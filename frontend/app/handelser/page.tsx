@@ -156,8 +156,16 @@ export default async function EventsPage() {
           <p className="text-xs text-[var(--text-dim)] leading-relaxed max-w-2xl">
             Varför försvinner någon ur söktjänsten? Arbetsförmedlingen publicerar inte orsaken. Det kan vara avtal
             som löpt ut, eget utträde, ett namnbyte vi ännu inte kartlagt — eller hävning. Vi påstår inget i det
-            enskilda fallet; när AF själva publicerar ett besked länkar vi det. Metoden beskrivs på{" "}
-            <Link href="/metod" className="link">metodsidan</Link>.
+            enskilda fallet; när AF själva publicerar ett besked länkar vi det. Kolla gärna själv i{" "}
+            <a
+              href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
+              className="link"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              AF:s söktjänst
+            </a>
+            . Metoden beskrivs på <Link href="/metod" className="link">metodsidan</Link>.
           </p>
         </section>
       )}

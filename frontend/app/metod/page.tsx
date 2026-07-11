@@ -69,8 +69,16 @@ export default async function MethodPage() {
             statistiken. Varför ett avtal lämnat statistiken framgår inte av filerna, så vi anger ingen orsak.
           </Term>
           <Term t="Radarn (vår bevakning av söktjänsten)">
-            Återkommande ögonblicksbilder av Arbetsförmedlingens söktjänst &quot;Sök leverantör inom rusta och
-            matcha&quot; — de leverantörer och kontor arbetssökande kan välja mellan just nu. Statistikfilerna släpar
+            Veckovisa ögonblicksbilder av{" "}
+            <a
+              href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
+              className="link"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Arbetsförmedlingens söktjänst &quot;Sök leverantör inom rusta och matcha&quot;
+            </a>{" "}
+            — de leverantörer och kontor arbetssökande kan välja mellan just nu. Statistikfilerna släpar
             upp till två månader; söktjänsten ändras när AF agerar, och Radarn gör skillnaden synlig. Att en
             leverantör försvinner ur söktjänsten kan bero på avtal som löpt ut, eget utträde, namnbyte eller
             hävning — AF publicerar inte orsaken och vi påstår ingen. Namnbyten matchas mot vår

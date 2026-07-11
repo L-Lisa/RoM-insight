@@ -142,8 +142,16 @@ export default async function SupplierPage({ params }: Props) {
           Syntes inte i Arbetsförmedlingens söktjänst vid senaste kontrollen (
           {new Date(`${radarStatus.checked}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })}
           ), trots avtal i senaste statistiken. AF publicerar inte orsaken — det kan vara avtal som löpt ut, eget
-          utträde, namnbyte eller hävning.{" "}
-          <Link href="/handelser" className="link">Mer i Radarn →</Link>
+          utträde, namnbyte eller hävning. Kolla själv i{" "}
+          <a
+            href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
+            className="link"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            AF:s söktjänst
+          </a>
+          . <Link href="/handelser" className="link">Mer i Radarn →</Link>
         </div>
       )}
 
