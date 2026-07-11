@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import { RatingBadge, RiskBadge } from "@/components/Badges";
+import { CompareButton } from "@/components/CompareButton";
 import { DataStamp } from "@/components/DataStamp";
 import { getAreaMunicipalities, getAreaRows, getLatestPeriod } from "@/lib/queries";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
@@ -67,6 +68,7 @@ export default async function AreaPage({ params }: Props) {
               <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Betyg" layers={explain.betyg} /></th>
               <th className="mono-label px-4 py-3 font-normal text-right">Deltagare</th>
               <th className="mono-label px-4 py-3 font-normal text-center"><Tooltip label="Risk" layers={explain.riskflagga} /></th>
+              <th className="mono-label px-2 py-3 font-normal text-center" aria-label="Jämför" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line-soft)]">
@@ -85,6 +87,7 @@ export default async function AreaPage({ params }: Props) {
                 <td className="px-4 py-3 text-right"><RatingBadge rating={row.rating} /></td>
                 <td className="px-4 py-3 text-right tabular-nums">{row.participants}</td>
                 <td className="px-4 py-3 text-center"><RiskBadge risk={row.risk_of_termination} /></td>
+                <td className="px-2 py-3 text-center"><CompareButton supplier={row.supplier} area={row.delivery_area} /></td>
               </tr>
             ))}
           </tbody>

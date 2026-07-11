@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
+import { CompareTray } from "@/components/CompareTray";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
@@ -35,6 +36,7 @@ export default function RootLayout({
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+        <CompareTray />
         <footer className="border-t border-[var(--line)] mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-xs text-[var(--text-dim)] space-y-2">
             <p>

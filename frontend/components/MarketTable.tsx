@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatScore, slugify } from "@/lib/format";
+import { CompareButton } from "@/components/CompareButton";
 
 /**
  * C3: hela marknaden, sorterbar. Klientkomponent — datan kommer från servern.
@@ -84,6 +85,7 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
                   </button>
                 </th>
               ))}
+              <th className="mono-label px-2 py-3 font-normal text-center" aria-label="Jämför" />
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line-soft)]">
@@ -102,6 +104,7 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
                 <td className="px-4 py-2.5 text-right tabular-nums text-[var(--text-dim)]">
                   {r.sustainability === null ? "–" : `${r.sustainability} %`}
                 </td>
+                <td className="px-2 py-2.5 text-center"><CompareButton supplier={r.supplier} area={r.delivery_area} /></td>
               </tr>
             ))}
           </tbody>
