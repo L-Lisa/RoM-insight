@@ -47,9 +47,14 @@ RoM-insight/
 
 **There is exactly ONE Vercel project for this repository.**
 
-- Vercel project name: `frontend`
+- Vercel project name: `ro-m-insight` (verified via Vercel API 2026-07-03;
+  an earlier version of this file said `frontend`, which was wrong)
 - Root directory in Vercel: `frontend/`
 - Framework: Next.js
+- Production URL: https://ro-m-insight.vercel.app (deploys from `master`)
+- Preview deployments (other branches) are behind Vercel SSO — only the
+  team sees them. NEXT_PUBLIC Supabase config has a code fallback in
+  `frontend/lib/supabase.ts` because the Vercel project has no env vars.
 
 Do not create additional Vercel projects for this repository. There is no reason
 to have more than one. If you are ever asked to set up Vercel for this project,
@@ -154,13 +159,24 @@ If QA fails, the import stops. Fix the data or the parser — do not weaken the 
 ## What has been built (MVP — phases 1–3)
 
 - Data ingestion pipeline: inspect → parse → QA → insert
-- Market overview dashboard with KPI cards and supplier leaderboard
-- Supplier list with search
-- Supplier profile page with history table and trend chart
-- Delivery area overview with per-area leaderboard
+- Backfill tooling (`scripts/backfill.py`): multi-period AF files + rating
+  history + period weights → idempotent SQL migrations + QA report
+- Auto-fetch (`scripts/fetch_af.py`): detects new files on AF's page,
+  downloads, never auto-publishes
+- Diff engine (`scripts/diff_report.py`): human-readable per-period diff —
+  the basis for the events page and Marknadsbrevet
+- 8 result periods (mars 2025–maj 2026) + rating history (jan 2025–) live
+  in production. New tables: suppliers, supplier_name_variants,
+  supplier_ratings, period_weights (see docs/DATA_SCHEMA.md)
+- Public site (Fas 2): overview with market trend + movers, supplier
+  directory (grouped/searchable), supplier profiles (per-contract table,
+  percentile, rating-history matrix, deterministic insight texts),
+  area pages, compare view (max 6 contracts), events log, exit archive,
+  method page with Hitta felet-garantin, sitemap/SEO metadata
+- Dark analytics theme via CSS design tokens (globals.css)
 - RLS enabled on all Supabase tables
 
-Phase 4 (advanced analytics) is next. See `docs/ROADMAP.md`.
+Next: Werket demo → pro tier decisions (C1–C6). See `docs/ROADMAP.md`.
 
 ---
 

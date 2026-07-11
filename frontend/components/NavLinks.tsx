@@ -5,15 +5,22 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Översikt" },
+  { href: "/marknad", label: "Marknad" },
   { href: "/leverantorer", label: "Leverantörer" },
-  { href: "/leveransomraden", label: "Leveransområden" },
+  { href: "/leveransomraden", label: "Områden" },
+  { href: "/jamfor", label: "Jämför" },
+  { href: "/riskzon", label: "Riskzon" },
+  { href: "/handelser", label: "Händelser" },
+  { href: "/arkiv", label: "Arkiv" },
+  { href: "/marknadsbrevet", label: "Marknadsbrevet" },
+  { href: "/metod", label: "Metod" },
 ];
 
 export function NavLinks() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-6 text-sm">
+    <nav className="flex items-center gap-1 text-sm overflow-x-auto">
       {links.map(({ href, label }) => {
         const active =
           href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -21,11 +28,11 @@ export function NavLinks() {
           <Link
             key={href}
             href={href}
-            className={
+            className={`px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${
               active
-                ? "text-gray-900 font-medium"
-                : "text-gray-500 hover:text-gray-900 transition-colors"
-            }
+                ? "bg-[var(--bg-hover)] text-[var(--text)]"
+                : "text-[var(--text-dim)] hover:text-[var(--text)]"
+            }`}
           >
             {label}
           </Link>

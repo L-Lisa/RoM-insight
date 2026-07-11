@@ -1,114 +1,90 @@
-import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { Tooltip } from "@/components/Tooltip";
-import { tooltips } from "@/lib/tooltips";
+import { explain } from "@/lib/tooltips";
+import { DataStamp } from "@/components/DataStamp";
+import { getLatestPeriod, getMunicipalities, getPeriodRows } from "@/lib/queries";
+import { KommunSearch } from "@/components/KommunSearch";
+import { formatScore } from "@/lib/format";
 
-async function getAreaSummary() {
-  const { data: dateRow } = await supabase
-    .from("rom_results")
-    .select("dataset_date")
-    .order("dataset_date", { ascending: false })
-    .limit(1)
-    .single();
+export const revalidate = 3600;
 
-  const latestDate = dateRow?.dataset_date ?? null;
-  if (!latestDate) return [];
+export const metadata = {
+  title: "Leveransområden",
+  description:
+    "Alla leveransområden i Rusta och matcha: antal leverantörer, snittresultat och riskläge per område. Data: Arbetsförmedlingen.",
+};
 
-  const { data } = await supabase
-    .from("rom_results")
-    .select("delivery_area, weighted_score, risk_of_termination, participants")
-    .eq("dataset_date", latestDate);
+export default async function AreasPage() {
+  const latest = await getLatestPeriod();
+  const [rows, municipalities] = await Promise.all([
+    latest ? getPeriodRows(latest) : Promise.resolve([]),
+    getMunicipalities(),
+  ]);
 
-  if (!data) return [];
-
-  const latest = data;
-
-  // Group by delivery area
-  const areas = new Map<string, {
-    count: number;
-    totalWeightedScore: number;
-    atRisk: number;
-    totalParticipants: number;
-  }>();
-
-  for (const row of latest) {
-    const existing = areas.get(row.delivery_area) ?? {
-      count: 0,
-      totalWeightedScore: 0,
-      atRisk: 0,
-      totalParticipants: 0,
-    };
-    areas.set(row.delivery_area, {
-      count: existing.count + 1,
-      totalWeightedScore: existing.totalWeightedScore + (row.weighted_score ?? 0),
-      atRisk: existing.atRisk + (row.risk_of_termination ? 1 : 0),
-      totalParticipants: existing.totalParticipants + (row.participants ?? 0),
-    });
+  const areas = new Map<string, { count: number; scores: number[]; risk: number; participants: number }>();
+  for (const r of rows) {
+    const a = areas.get(r.delivery_area) ?? { count: 0, scores: [], risk: 0, participants: 0 };
+    a.count++;
+    if (r.weighted_score !== null) a.scores.push(r.weighted_score);
+    if (r.risk_of_termination === true) a.risk++;
+    a.participants += r.participants ?? 0;
+    areas.set(r.delivery_area, a);
   }
 
-  return Array.from(areas.entries())
-    .map(([area, stats]) => ({
-      area,
-      avgWeightedScore: stats.totalWeightedScore / stats.count,
-      supplierCount: stats.count,
-      atRisk: stats.atRisk,
-      totalParticipants: stats.totalParticipants,
-    }))
-    .sort((a, b) => b.avgWeightedScore - a.avgWeightedScore);
-}
+  const national = rows.map((r) => r.weighted_score).filter((v): v is number => v !== null);
+  const nationalAvg = national.reduce((s, v) => s + v, 0) / (national.length || 1);
 
-export default async function LeveransområdenPage() {
-  const areas = await getAreaSummary();
+  const list = Array.from(areas.entries())
+    .map(([name, a]) => ({
+      name,
+      count: a.count,
+      participants: a.participants,
+      avg: a.scores.length ? a.scores.reduce((s, v) => s + v, 0) / a.scores.length : null,
+    }))
+    .sort((a, b) => (b.avg ?? 0) - (a.avg ?? 0));
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Leveransområden</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {areas.length} leveransområden · Källa: Arbetsförmedlingen
+        <h1 className="text-2xl font-semibold tracking-tight">Leveransområden</h1>
+        <p className="text-sm text-[var(--text-dim)] mt-1">
+          {list.length} områden i senaste statistiken · riksgenomsnitt viktat resultat {formatScore(nationalAvg)}
         </p>
+        <div className="mt-2"><DataStamp period={latest} note="snitt per område är RoM Insights beräkning (oviktat medel av avtalens viktade resultat)" /></div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <KommunSearch municipalities={municipalities} />
+
+      <div className="card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
-            <tr>
-              <th className="px-4 py-3 text-left">#</th>
-              <th className="px-4 py-3 text-left"><Tooltip label="Leveransområde" text={tooltips.leveransomrade} /></th>
-              <th className="px-4 py-3 text-right">Leverantörer</th>
-              <th className="px-4 py-3 text-right">Snitt viktat resultat</th>
-              <th className="px-4 py-3 text-right">Deltagare</th>
-              <th className="px-4 py-3 text-center"><Tooltip label="Riskerar hävning" text={tooltips.riskHavning} /></th>
+          <thead className="text-left">
+            <tr className="border-b border-[var(--line)]">
+              <th className="mono-label px-4 py-3 font-normal"><Tooltip label="Område" layers={explain.leveransomrade} /></th>
+              <th className="mono-label px-4 py-3 font-normal text-right">Avtal</th>
+              <th className="mono-label px-4 py-3 font-normal text-right">Deltagare</th>
+              <th className="mono-label px-4 py-3 font-normal text-right"><Tooltip label="Snitt viktat" layers={explain.viktatResultat} /></th>
+              <th className="mono-label px-4 py-3 font-normal text-right">Mot riket</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {areas.map((row, i) => (
-              <tr key={i} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-gray-400">{i + 1}</td>
-                <td className="px-4 py-3 font-medium">
-                  <Link
-                    href={`/leveransomraden/${encodeURIComponent(row.area)}`}
-                    className="hover:text-blue-600 hover:underline"
-                  >
-                    {row.area}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{row.supplierCount}</td>
-                <td className="px-4 py-3 text-right tabular-nums">
-                  {row.avgWeightedScore.toFixed(3)}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums">{row.totalParticipants}</td>
-                <td className="px-4 py-3 text-center">
-                  {row.atRisk > 0 ? (
-                    <span className="inline-block bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded-full">
-                      {row.atRisk}
-                    </span>
-                  ) : (
-                    <span className="text-gray-300">–</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+          <tbody className="divide-y divide-[var(--line-soft)]">
+            {list.map((a) => {
+              const rel = a.avg !== null ? Math.round(((a.avg - nationalAvg) / nationalAvg) * 100) : null;
+              return (
+                <tr key={a.name} className="hover:bg-[var(--bg-hover)] transition-colors">
+                  <td className="px-4 py-3 font-medium">
+                    <Link href={`/leveransomraden/${encodeURIComponent(a.name)}`} className="hover:text-[var(--compare-1)]">
+                      {a.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{a.count}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{a.participants.toLocaleString("sv-SE")}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">{formatScore(a.avg)}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
+                    {rel === null ? "–" : rel > 0 ? `+${rel} %` : `${rel} %`}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
