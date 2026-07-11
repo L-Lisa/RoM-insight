@@ -8,6 +8,7 @@ import { RatingBadge, RiskBadge, DirectionArrow } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import { WhatIsNeeded } from "@/components/WhatIsNeeded";
 import { PrintButton } from "@/components/PrintButton";
+import { CompareButton } from "@/components/CompareButton";
 import { ShowSource } from "@/components/ShowSource";
 import {
   getAllPeriodWeights,
@@ -184,6 +185,7 @@ export default async function SupplierPage({ params }: Props) {
                 <th className="mono-label px-4 py-3 font-normal text-right">Deltagare</th>
                 <th className="mono-label px-4 py-3 font-normal text-center"><Tooltip label="Risk" layers={explain.riskflagga} /></th>
                 <th className="mono-label px-4 py-3 font-normal text-right">Trend</th>
+                <th className="mono-label px-2 py-3 font-normal text-center" aria-label="Jämför" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line-soft)]">
@@ -210,6 +212,7 @@ export default async function SupplierPage({ params }: Props) {
                   <td className="px-4 py-3 text-right tabular-nums">{latest.participants}</td>
                   <td className="px-4 py-3 text-center"><RiskBadge risk={latest.risk_of_termination} /></td>
                   <td className="px-4 py-3 text-right"><DirectionArrow direction={insight.direction} /></td>
+                  <td className="px-2 py-3 text-center"><CompareButton supplier={name} area={area} /></td>
                 </tr>
               ))}
             </tbody>
