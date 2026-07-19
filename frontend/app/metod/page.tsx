@@ -77,8 +77,16 @@ export default async function MethodPage() {
             &quot;ej publicerad&quot; — aldrig ett antaget värde.
           </Term>
           <Term t="Percentil (vår beräkning)">
-            Avtalets viktade resultat rankat mot samtliga avtal i samma period. Detta är RoM Insights beräkning på
-            AF:s siffror, inte ett AF-mått — därför märks den alltid som vår.
+            Avtalets viktade resultat rankat mot samtliga betygsatta avtal i samma period. Detta är RoM Insights
+            beräkning på AF:s siffror, inte ett AF-mått — därför märks den alltid som vår.
+          </Term>
+          <Term t="Varför rankas bara betygsatta avtal?">
+            Viktat resultatmått delas med två gånger antalet deltagare. För avtal med en handfull deltagare ger det
+            extremvärden som ser imponerande eller katastrofala ut men bara är brus — i maj 2026 hade det
+            &quot;bästa&quot; avtalet utan betyg måttet 1,15 på 2 deltagare. AF sätter av samma skäl inget betyg under
+            18 deltagare och 12 månaders verksamhet, och rankar aldrig dessa avtal. Därför gäller på RoM Insight:
+            topplistor, lyft/tapp, percentiler och områdessnitt räknas enbart på betygsatta avtal. Avtal utan betyg
+            visas med alla sina siffror i tabellerna — de rankas bara inte.
           </Term>
           <Term t="Händelser och arkiv (vår sammanställning)">
             Skillnaden mellan två på varandra följande släpp: betygsändringar, nya avtal, avtal som lämnat

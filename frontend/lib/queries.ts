@@ -55,12 +55,17 @@ export async function getPeriodRows(period: string): Promise<RomResult[]> {
   return out;
 }
 
+/** Rankinglistor rankar ENDAST betygsatta avtal. Avtal under AF:s betygsvillkor
+ *  (minst 18 deltagare, 12 månaders verksamhet) har så små nämnare att viktat
+ *  resultat blir statistiskt meningslöst (maj 2026: "bästa" avtalet utan betyg
+ *  hade 1,15 på 2 deltagare). AF rankar dem inte — det gör inte vi heller. */
 export async function getTopContracts(period: string, limit = 5, ascending = false): Promise<RomResult[]> {
   const { data } = await supabase
     .from("rom_results")
     .select("*")
     .eq("dataset_date", period)
     .not("weighted_score", "is", null)
+    .not("rating", "is", null)
     .order("weighted_score", { ascending })
     .limit(limit);
   return (data ?? []) as RomResult[];
@@ -117,7 +122,8 @@ export async function getSupplierRatingHistory(name: string): Promise<SupplierRa
   return (data ?? []) as SupplierRating[];
 }
 
-/** Percentil för ett värde mot alla avtal i perioden. RoM Insights beräkning. */
+/** Percentil för ett värde mot betygsatta avtal i perioden (anroparen filtrerar
+ *  allScores till rating !== null). RoM Insights beräkning. */
 export function percentileOf(value: number, allScores: number[]): number {
   if (!allScores.length) return 0;
   const below = allScores.filter((s) => s < value).length;

@@ -45,10 +45,13 @@ export function buildIssue(prev: RomResult[], curr: RomResult[], prevPeriod: str
   const key = (r: RomResult) => r.ka_number ?? `${r.supplier}|${r.delivery_area}`;
   const prevMap = new Map(prev.map((r) => [key(r), r]));
 
+  // Lyft/tapp endast för avtal med betyg i båda perioderna — utan betyg är
+  // viktat resultat inte jämförbart (för små nämnare). Riskzonen (riskCount)
+  // följer däremot AF:s publika kriterier och inkluderar medvetet obetygsatta.
   const movers: Mover[] = [];
   for (const c of curr) {
     const p = prevMap.get(key(c));
-    if (p && c.weighted_score !== null && p.weighted_score !== null) {
+    if (p && c.weighted_score !== null && p.weighted_score !== null && c.rating !== null && p.rating !== null) {
       movers.push({
         supplier: c.supplier,
         delivery_area: c.delivery_area,

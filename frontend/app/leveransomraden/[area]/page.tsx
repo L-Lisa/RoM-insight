@@ -32,13 +32,19 @@ export default async function AreaPage({ params }: Props) {
   const latest = await getLatestPeriod();
   if (!latest) notFound();
 
-  const [rows, municipalities] = await Promise.all([
+  const [areaRows, municipalities] = await Promise.all([
     getAreaRows(latest, areaName),
     getAreaMunicipalities(areaName),
   ]);
-  if (!rows.length) notFound();
+  if (!areaRows.length) notFound();
 
-  const top5Keys = new Set(rows.slice(0, 5).map((r) => r.id));
+  // Endast betygsatta avtal rankas (#) — avtal utan betyg listas sist, orankade:
+  // under AF:s betygsvillkor är viktat resultat inte jämförbart.
+  const rated = areaRows.filter((r) => r.rating !== null);
+  const unrated = areaRows.filter((r) => r.rating === null);
+  const rows = [...rated, ...unrated];
+
+  const top5Keys = new Set(rated.slice(0, 5).map((r) => r.id));
 
   return (
     <div className="space-y-6">
@@ -48,7 +54,8 @@ export default async function AreaPage({ params }: Props) {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight mt-2">Rusta och matcha i {areaName}</h1>
         <p className="text-sm text-[var(--text-dim)] mt-1">
-          {rows.length} avtal · {periodLabel(latest)} · sorterade på viktat resultat
+          {rows.length} avtal · {periodLabel(latest)} · betygsatta avtal rankade på viktat resultat
+          {unrated.length > 0 && ` · ${unrated.length} avtal utan betyg listas sist, orankade`}
         </p>
         {municipalities.length > 0 && (
           <p className="text-xs text-[var(--text-dim)] mt-1 max-w-3xl">
@@ -77,7 +84,7 @@ export default async function AreaPage({ params }: Props) {
                 key={row.id}
                 className={`hover:bg-[var(--bg-hover)] transition-colors ${top5Keys.has(row.id) ? "" : "opacity-80"}`}
               >
-                <td className="px-4 py-3 text-[var(--text-faint)] tabular-nums">{i + 1}</td>
+                <td className="px-4 py-3 text-[var(--text-faint)] tabular-nums">{row.rating !== null ? i + 1 : "–"}</td>
                 <td className="px-4 py-3 font-medium">
                   <Link href={`/leverantorer/${slugify(row.supplier)}`} className="hover:text-[var(--compare-1)]">
                     {row.supplier}

@@ -42,8 +42,8 @@ export const explain: Record<string, TwoLayerText> = {
     plain: "På ren svenska: avtalet har lämnat statistiken. Varför — hävning, egen uppsägning eller annat — framgår inte av AF:s filer, så det påstår vi inget om.",
   },
   percentil: {
-    af: "Percentilen är RoM Insights beräkning: avtalets viktade resultatmått rankat mot samtliga avtal i samma period. Detta är inte ett AF-mått.",
-    plain: "På ren svenska: \"bättre än 78 % av alla avtal\" säger mer än \"0,32\". Vår beräkning, gjord på AF:s siffror — metoden finns beskriven på metodsidan.",
+    af: "Percentilen är RoM Insights beräkning: avtalets viktade resultatmått rankat mot samtliga betygsatta avtal i samma period. Avtal utan betyg ingår inte — under AF:s betygsvillkor är måttet inte jämförbart. Detta är inte ett AF-mått.",
+    plain: "På ren svenska: \"bättre än 78 % av alla betygsatta avtal\" säger mer än \"0,32\". Vår beräkning, gjord på AF:s siffror — metoden finns beskriven på metodsidan.",
   },
   hallbarhet: {
     af: "RR1 = första godkända resultatredovisningen (deltagaren fick arbete eller började studera). RR2 = godkänd uppföljningsredovisning för samma placering, senare i tid.",
