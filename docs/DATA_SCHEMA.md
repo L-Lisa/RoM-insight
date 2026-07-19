@@ -85,3 +85,41 @@ November releases on ~400 of 905 rows. Backfill policy: latest available
 revision per period wins. The DB's 2026-01 rows still hold the January
 release values (maj release revised sum results 22219 → 22212) — open
 decision: update to latest revision or keep as-first-published.
+
+---
+
+## Added 2026-07-16 (column semantics + verification, cross-check session)
+
+### rom_results.results = RR1 ONLY (verified on all 2,481 rows, 2026 periods)
+
+`results` is the count of FIRST approved results (RR1 = deltagaren fick
+arbete eller började studera). It does NOT include RR2 (godkänd
+uppföljningsredovisning). RR1 and RR2 are ALWAYS kept separate — per-level
+detail lives in rr1_a/rr2_a/rr1_b/rr2_b/rr1_c/rr2_c. Never sum RR1+RR2 into
+one "results" number in UI or pipeline (double-counts placements; see
+CLAUDE.md rule on RESULT_COLUMNS).
+
+### Ranking rule (product decision, Lisa 2026-07-16)
+
+Contracts WITHOUT betyg (rating IS NULL) are never included in viktat
+resultat rankings: top/bottom lists, movers, percentiles, area averages,
+constellation start view. Below AF's rating threshold (18 participants,
+12 months) the measure is statistical noise (May 2026: best unrated
+contract showed 1.15 on 2 participants). They remain fully visible in
+tables — just unranked. Frontend enforces this; there is no DB flag.
+
+### Revision decision CLOSED (supersedes note above)
+
+2026-01 rows were updated to the May-release revision on Lisa's order
+(2026-07-03): "hela historiken följer samma regel — senaste revision
+vinner". Verified 2026-07-16: DB matches the May file exactly
+(results sum 22,212), and all 2025 periods match the November 2025 file.
+
+### Known structural debt (flagged 2026-07-16, not yet actioned)
+
+- staging_rom_results: stale duplicate from the old pipeline (7,084 rows,
+  frozen). Candidate for retirement — requires checking valjleverantor
+  does not read it (shared DB) + Lisa's explicit OK (destructive).
+- raw_datasets lineage: 3 rows but 8 periods live — dataset_id no longer
+  identifies source file for backfilled rows. supplier_ratings.source_file
+  does this right; rom_results lacks an equivalent (additive fix possible).

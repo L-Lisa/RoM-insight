@@ -42,14 +42,16 @@ export default async function OverviewPage() {
   const unrated = latestRows.filter((r) => r.rating === null).length;
   const insight = marketInsight(marketSeries);
 
-  // Störst lyft/tapp sedan förra perioden — deterministisk beräkning per avtal
+  // Störst lyft/tapp sedan förra perioden — deterministisk beräkning per avtal.
+  // Endast avtal med betyg i båda perioderna: utan betyg är underlaget för litet
+  // för att en förändring i viktat resultat ska betyda något.
   const movers: { row: RomResult; delta: number }[] = [];
   if (prev) {
     const key = (r: RomResult) => r.ka_number ?? `${r.supplier}|${r.delivery_area}`;
     const prevMap = new Map(prevRows.map((r) => [key(r), r]));
     for (const r of latestRows) {
       const p = prevMap.get(key(r));
-      if (p && r.weighted_score !== null && p.weighted_score !== null) {
+      if (p && r.weighted_score !== null && p.weighted_score !== null && r.rating !== null && p.rating !== null) {
         movers.push({ row: r, delta: r.weighted_score - p.weighted_score });
       }
     }
@@ -117,6 +119,11 @@ export default async function OverviewPage() {
           </div>
           <LeaderboardTable rows={bottom5} weights={weights} />
         </section>
+        <p className="lg:col-span-2 text-xs text-[var(--text-dim)]">
+          Endast betygsatta avtal rankas. Avtal utan betyg — under AF:s betygsvillkor (minst 18 deltagare,
+          minst 12 månaders verksamhet) — har för litet underlag för att viktat resultat ska gå att jämföra.
+          De syns i tabellerna på <Link href="/marknad" className="link">marknadssidan</Link> och profilsidorna.
+        </p>
       </div>
 
       {prev && (lifts.length > 0 || drops.length > 0) && (
@@ -129,6 +136,9 @@ export default async function OverviewPage() {
             <h2 className="text-base font-medium mb-3">Största tapp sedan {periodLabel(prev)}</h2>
             <MoverList movers={drops} />
           </div>
+          <p className="lg:col-span-2 text-xs text-[var(--text-dim)]">
+            Räknat på avtal med betyg i båda perioderna.
+          </p>
         </section>
       )}
 

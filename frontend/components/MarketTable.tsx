@@ -15,12 +15,15 @@ export interface MarketRow {
   weighted_score: number | null;
   rating: number | null;
   participants: number;
+  /** Antal RR1 — första godkända resultatet (arbete eller studier). Hålls alltid isär från RR2. */
   results: number;
+  /** Antal RR2 — godkänd uppföljningsredovisning, senare i tid. Aldrig hopslagen med RR1. */
+  rr2: number;
   /** RR2/RR1 i procent — RoM Insights beräkning; null om RR1 = 0 */
   sustainability: number | null;
 }
 
-type SortKey = "supplier" | "delivery_area" | "weighted_score" | "rating" | "participants" | "results" | "sustainability";
+type SortKey = "supplier" | "delivery_area" | "weighted_score" | "rating" | "participants" | "results" | "rr2" | "sustainability";
 
 const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: "supplier", label: "Leverantör", numeric: false },
@@ -28,9 +31,14 @@ const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
   { key: "weighted_score", label: "Viktat", numeric: true },
   { key: "rating", label: "Betyg", numeric: true },
   { key: "participants", label: "Deltagare", numeric: true },
-  { key: "results", label: "Resultat", numeric: true },
+  { key: "results", label: "RR1", numeric: true },
+  { key: "rr2", label: "RR2", numeric: true },
   { key: "sustainability", label: "Hållbarhet", numeric: true },
 ];
+
+/** Vid sortering på viktat resultat sorteras avtal utan betyg alltid sist —
+ *  under AF:s betygsvillkor är måttet inte jämförbart (för små nämnare). */
+const RATED_FIRST_KEYS: SortKey[] = ["weighted_score"];
 
 export function MarketTable({ rows }: { rows: MarketRow[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("weighted_score");
@@ -43,6 +51,11 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
       ? rows.filter((r) => r.supplier.toLowerCase().includes(q) || r.delivery_area.toLowerCase().includes(q))
       : rows;
     return [...filtered].sort((a, b) => {
+      if (RATED_FIRST_KEYS.includes(sortKey)) {
+        const aRated = a.rating !== null ? 0 : 1;
+        const bRated = b.rating !== null ? 0 : 1;
+        if (aRated !== bRated) return aRated - bRated;
+      }
       const av = a[sortKey];
       const bv = b[sortKey];
       if (av === null && bv === null) return 0;
@@ -101,6 +114,7 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.rating ?? <span className="text-[var(--text-faint)]" title="Ej betygsatt ännu">·</span>}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.participants}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.results}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{r.rr2}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums text-[var(--text-dim)]">
                   {r.sustainability === null ? "–" : `${r.sustainability} %`}
                 </td>
@@ -110,7 +124,10 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-[var(--text-dim)]">{sorted.length} avtal visas.</p>
+      <p className="text-xs text-[var(--text-dim)]">
+        {sorted.length} avtal visas. Vid sortering på viktat resultat hamnar avtal utan betyg sist —
+        under AF:s betygsvillkor (minst 18 deltagare, 12 månaders verksamhet) är måttet inte jämförbart.
+      </p>
     </div>
   );
 }

@@ -76,7 +76,10 @@ export default async function SupplierPage({ params }: Props) {
   const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
   const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
   const weightsByPeriod = new Map((await getAllPeriodWeights()).map((w) => [w.period, w]));
+  // Percentil och områdessnitt räknas ENDAST mot betygsatta avtal — under AF:s
+  // betygsvillkor är viktat resultat inte jämförbart (för små nämnare).
   const allScores = latestAll
+    .filter((r) => r.rating !== null)
     .map((r) => r.weighted_score)
     .filter((v): v is number => v !== null && v !== undefined);
   // C2: benchmark mot områdets snitt (RoM Insights beräkning, oviktat medel)
@@ -84,7 +87,7 @@ export default async function SupplierPage({ params }: Props) {
   {
     const acc = new Map<string, number[]>();
     for (const r of latestAll) {
-      if (r.weighted_score !== null) acc.set(r.delivery_area, [...(acc.get(r.delivery_area) ?? []), r.weighted_score]);
+      if (r.weighted_score !== null && r.rating !== null) acc.set(r.delivery_area, [...(acc.get(r.delivery_area) ?? []), r.weighted_score]);
     }
     for (const [a, v] of acc) areaAvg.set(a, v.reduce((x, y) => x + y, 0) / v.length);
   }
@@ -105,7 +108,13 @@ export default async function SupplierPage({ params }: Props) {
       latest: series[series.length - 1],
       insight: contractInsight(series),
     }))
-    .sort((a, b) => (b.latest.weighted_score ?? 0) - (a.latest.weighted_score ?? 0));
+    .sort((a, b) => {
+      // Betygsatta avtal först — utan betyg är viktat resultat inte jämförbart.
+      const aRated = a.latest.rating !== null ? 0 : 1;
+      const bRated = b.latest.rating !== null ? 0 : 1;
+      if (aRated !== bRated) return aRated - bRated;
+      return (b.latest.weighted_score ?? 0) - (a.latest.weighted_score ?? 0);
+    });
 
   const biggest = [...areas].sort((a, b) => (b.latest.participants ?? 0) - (a.latest.participants ?? 0))[0];
 
@@ -196,14 +205,14 @@ export default async function SupplierPage({ params }: Props) {
                     <ShowSource row={latest} weights={weightsByPeriod.get(latest.dataset_date) ?? null} />
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
-                    {latest.dataset_date === latestPeriod && latest.weighted_score !== null
+                    {latest.dataset_date === latestPeriod && latest.weighted_score !== null && latest.rating !== null
                       ? `${percentileOf(latest.weighted_score, allScores)} %`
                       : "–"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-[var(--text-dim)]">
                     {(() => {
                       const avg = areaAvg.get(area);
-                      if (avg === undefined || latest.weighted_score === null || latest.dataset_date !== latestPeriod) return "–";
+                      if (avg === undefined || latest.weighted_score === null || latest.rating === null || latest.dataset_date !== latestPeriod) return "–";
                       const rel = Math.round(((latest.weighted_score - avg) / avg) * 100);
                       return rel > 0 ? `+${rel} %` : `${rel} %`;
                     })()}
@@ -224,7 +233,7 @@ export default async function SupplierPage({ params }: Props) {
         <WhatIsNeeded contracts={latestRows} weights={weights} period={latestPeriod} />
       )}
 
-      {!isExited && biggest && latestPeriod && biggest.latest.dataset_date === latestPeriod && biggest.latest.weighted_score !== null && (
+      {!isExited && biggest && latestPeriod && biggest.latest.dataset_date === latestPeriod && biggest.latest.weighted_score !== null && biggest.latest.rating !== null && (
         <section className="card p-5">
           <h2 className="text-base font-medium mb-3">
             Position i marknaden <span className="text-[var(--text-dim)] font-normal">— största avtalet ({biggest.area})</span>
@@ -235,7 +244,7 @@ export default async function SupplierPage({ params }: Props) {
             percentile={percentileOf(biggest.latest.weighted_score, allScores)}
           />
           <p className="text-xs text-[var(--text-dim)] mt-3">
-            Viktat resultat {formatScore(biggest.latest.weighted_score)} · Percentilen är RoM Insights beräkning mot samtliga {allScores.length} avtal i perioden — inte ett AF-mått.
+            Viktat resultat {formatScore(biggest.latest.weighted_score)} · Percentilen är RoM Insights beräkning mot de {allScores.length} betygsatta avtalen i perioden — inte ett AF-mått. Avtal utan betyg ingår inte: under AF:s betygsvillkor är underlaget för litet för att jämföras.
           </p>
         </section>
       )}

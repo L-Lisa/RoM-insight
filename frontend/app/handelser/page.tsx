@@ -9,6 +9,7 @@ import {
   getPeriodRows,
   getPeriods,
   getRadarDates,
+  getRadarOfficeRows,
   getRadarRows,
   getSuppliers,
   radarMissingSuppliers,
@@ -58,13 +59,15 @@ export default async function EventsPage() {
   const radarDates = await getRadarDates();
   const latestRadar = radarDates.length ? radarDates[radarDates.length - 1] : null;
   const prevRadar = radarDates.length > 1 ? radarDates[radarDates.length - 2] : null;
-  const [latestRadarRows, prevRadarRows, suppliers, variants] = await Promise.all([
+  const [latestRadarRows, prevRadarRows, latestOfficeRows, prevOfficeRows, suppliers, variants] = await Promise.all([
     latestRadar ? getRadarRows(latestRadar) : Promise.resolve([]),
     prevRadar ? getRadarRows(prevRadar) : Promise.resolve([]),
+    latestRadar ? getRadarOfficeRows(latestRadar) : Promise.resolve([]),
+    prevRadar ? getRadarOfficeRows(prevRadar) : Promise.resolve([]),
     getSuppliers(),
     getNameVariants(),
   ]);
-  const radarEvents = prevRadar ? diffRadar(prevRadarRows, latestRadarRows) : [];
+  const radarEvents = prevRadar ? diffRadar(prevRadarRows, latestRadarRows, prevOfficeRows, latestOfficeRows) : [];
   const latestStatsRows = allRows[allRows.length - 1] ?? [];
   const missing = latestRadar
     ? radarMissingSuppliers(latestStatsRows, latestRadarRows, suppliers, variants)
@@ -100,10 +103,14 @@ export default async function EventsPage() {
 
           {missing.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium mb-2">
+              <h3 className="text-sm font-medium">
                 {missing.length} leverantörer har avtal i statistiken ({periodLabel(periods[periods.length - 1])})
-                men syntes inte i söktjänsten
+                men syntes inte alls i söktjänsten vid senaste kontrollen ({radarDateLabel(latestRadar)}).
               </h3>
+              <p className="text-xs text-[var(--text-dim)] mb-2">
+                Listan fångar bara leverantörer som saknas helt — kontor som försvinner ett och ett syns under
+                &rdquo;Sedan förra kollen&rdquo;.
+              </p>
               <div className="flex flex-wrap gap-2">
                 {missing.map((s) => (
                   <Link

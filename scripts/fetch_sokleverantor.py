@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""Radarn: tar en ögonblicksbild av AF:s sök leverantör-tjänst (leverantörsnivå).
+"""Radarn: tar en ögonblicksbild av AF:s sök leverantör-tjänst.
 
-Aggregerar per leverantör (af_leverantor_id): antal kontor + om nyval är öppet
-någonstans. Skriver rådata till data/raw/radar/ och idempotent upsert-SQL till
-data/generated_sql/ — SQL:en appliceras separat (supabase db push / MCP), i linje
-med pipelinens regel att automatiken förbereder och en människa släpper.
+Två nivåer ur samma hämtning:
+- Leverantörsnivå (af_leverantor_id): antal kontor + om nyval är öppet någonstans
+  → radar_snapshot_*.sql (sokleverantor_snapshots).
+- Kontorsnivå: en rad per kontor (postort/adress/koordinater)
+  → radar_office_snapshot_*.sql (sokleverantor_office_snapshots). Egen fil,
+  eftersom veckorutinen är scopad till enbart sokleverantor_snapshots —
+  aggregatfilen ska kunna appliceras oberoende av kontorsfilen.
+
+Skriver rådata till data/raw/radar/ och idempotent SQL till data/generated_sql/ —
+SQL:en appliceras separat (supabase db push / MCP), i linje med pipelinens regel
+att automatiken förbereder och en människa släpper.
 
 Varsam mot AF: 0.4 s paus mellan anrop, ärlig User-Agent. Kör tidigast varje vecka.
 Vid 5xx från AF: avbryt utan att skriva något (ingen partiell snapshot).
@@ -36,6 +43,58 @@ def sql_str(s: str) -> str:
     return "'" + s.replace("'", "''") + "'"
 
 
+def sql_opt_bool(v) -> str:
+    return "null" if v is None else str(bool(v)).lower()
+
+
+def office_rows(items: list, today: str) -> list[tuple]:
+    """Kontorsrader ur API-svaret, dedupade på tabellens primärnyckel
+    (snapshot_date, af_leverantor_id, postort, address)."""
+    seen: set[tuple] = set()
+    rows: list[tuple] = []
+    for it in items:
+        for a in it.get("adresser", []):
+            postort = (a.get("postort") or "").strip()
+            address = (a.get("adressrad") or "").strip()
+            key = (str(it["id"]), postort, address)
+            if key in seen:
+                continue
+            seen.add(key)
+            koord = a.get("koordinater") or {}
+            # float-cast: API:t levererar koordinater som strängar; ett omöjligt
+            # värde ska stoppa körningen, inte hamna oescapat i SQL:en.
+            lat = float(koord["latitud"]) if koord.get("latitud") is not None else None
+            lng = float(koord["longitud"]) if koord.get("longitud") is not None else None
+            rows.append((
+                today, str(it["id"]), it["namn"].strip(), postort, address,
+                lat, lng, it.get("nyval_tillatet"),
+            ))
+    return rows
+
+
+def write_office_sql(rows: list[tuple], today: str) -> Path:
+    """rows kommer från office_rows() och är garanterat icke-tom (main avbryter annars).
+    Delete + insert per datum: senaste hämtningen samma dag vinner — SAMMA regel som
+    aggregatfilen, annars divergerar tabellerna vid omkörning."""
+    out = SQL / f"radar_office_snapshot_{today.replace('-', '')}.sql"
+    values = ",\n".join(
+        f"  ('{d}', {sql_str(af_id)}, {sql_str(name)}, {sql_str(postort)}, {sql_str(addr)}, "
+        f"{'null' if lat is None else lat}, {'null' if lng is None else lng}, {sql_opt_bool(nyval)})"
+        for d, af_id, name, postort, addr, lat, lng, nyval in rows
+    )
+    out.write_text(
+        "-- Radarn kontorsnivå, genererad av scripts/fetch_sokleverantor.py\n"
+        "-- Idempotent: delete + insert per datum (senaste hämtningen samma dag vinner,\n"
+        "-- samma regel som aggregatfilen).\n"
+        f"delete from sokleverantor_office_snapshots where snapshot_date = '{today}';\n"
+        "insert into sokleverantor_office_snapshots "
+        "(snapshot_date, af_leverantor_id, supplier_name, postort, address, lat, lng, nyval)\nvalues\n"
+        + values
+        + ";\n"
+    )
+    return out
+
+
 def main() -> None:
     try:
         first = get(BASE.format(page=1))
@@ -56,15 +115,22 @@ def main() -> None:
     RAW.mkdir(parents=True, exist_ok=True)
     (RAW / f"radar-raw-{today}.json").write_text(json.dumps(items, ensure_ascii=False, indent=1))
 
+    # Kontorsrader först — aggregatets offices_count räknas ur SAMMA dedupade rader
+    # som kontorstabellen får, annars kan tabellerna divergera vid dubbletter i API:t.
+    o_rows = office_rows(items, today)
+
     # Aggregera per leverantör
     providers: dict[int, dict] = {}
     for it in items:
         p = providers.setdefault(it["id"], {"name": it["namn"].strip(), "offices": 0, "nyval": False})
-        p["offices"] += len(it.get("adresser", []))
         p["nyval"] = p["nyval"] or bool(it.get("nyval_tillatet"))
+    for _, af_id, *_rest in o_rows:
+        providers[int(af_id)]["offices"] += 1
 
     if len(providers) < 100:
         sys.exit(f"Bara {len(providers)} leverantörer — ser trasigt ut (förra kollen: ~780). Ingen SQL skriven.")
+    if not o_rows:
+        sys.exit("Leverantörer utan en enda kontorsadress — API-svaret ser trasigt ut. Ingen SQL skriven.")
 
     SQL.mkdir(parents=True, exist_ok=True)
     out = SQL / f"radar_snapshot_{today.replace('-', '')}.sql"
@@ -87,8 +153,10 @@ def main() -> None:
         f"update sokleverantor_snapshots sn set supplier_id = v.supplier_id\n"
         f"  from supplier_name_variants v where sn.snapshot_date = '{today}' and sn.supplier_id is null and lower(sn.supplier_name) = lower(v.variant);\n"
     )
+    office_out = write_office_sql(o_rows, today)
     print(f"KLART: {len(items)} poster -> {len(providers)} leverantörer, "
-          f"{sum(p['offices'] for p in providers.values())} kontor\nSQL: {out}")
+          f"{sum(p['offices'] for p in providers.values())} kontor\n"
+          f"SQL: {out}\nSQL (kontor): {office_out} ({len(o_rows)} rader)")
 
 
 if __name__ == "__main__":
