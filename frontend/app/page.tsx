@@ -15,6 +15,7 @@ import {
   getPeriodWeights,
   getTopContracts,
 } from "@/lib/queries";
+import { computeMovers, Mover } from "@/lib/newsletter";
 import { PeriodWeights } from "@/lib/types";
 import { marketInsight } from "@/lib/insights";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
@@ -42,23 +43,11 @@ export default async function OverviewPage() {
   const unrated = latestRows.filter((r) => r.rating === null).length;
   const insight = marketInsight(marketSeries);
 
-  // Störst lyft/tapp sedan förra perioden — deterministisk beräkning per avtal.
-  // Endast avtal med betyg i båda perioderna: utan betyg är underlaget för litet
-  // för att en förändring i viktat resultat ska betyda något.
-  const movers: { row: RomResult; delta: number }[] = [];
-  if (prev) {
-    const key = (r: RomResult) => r.ka_number ?? `${r.supplier}|${r.delivery_area}`;
-    const prevMap = new Map(prevRows.map((r) => [key(r), r]));
-    for (const r of latestRows) {
-      const p = prevMap.get(key(r));
-      if (p && r.weighted_score !== null && p.weighted_score !== null && r.rating !== null && p.rating !== null) {
-        movers.push({ row: r, delta: r.weighted_score - p.weighted_score });
-      }
-    }
-    movers.sort((a, b) => b.delta - a.delta);
-  }
-  const lifts = movers.slice(0, 3);
-  const drops = movers.slice(-3).reverse();
+  // Störst lyft/tapp sedan förra perioden — delad beräkning med Marknadsbrevet
+  // (computeMovers: betygsregeln + teckenfilter så listorna aldrig överlappar).
+  const movers = prev ? computeMovers(prevRows, latestRows) : [];
+  const lifts = movers.filter((m) => m.delta > 0).slice(0, 3);
+  const drops = movers.filter((m) => m.delta < 0).slice(-3).reverse();
 
   const events = prev ? diffPeriods(prevRows, latestRows, prev, latest) : [];
   const exits = events.filter((e) => e.type === "left").length;
@@ -165,17 +154,17 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function MoverList({ movers, positive }: { movers: { row: RomResult; delta: number }[]; positive?: boolean }) {
+function MoverList({ movers, positive }: { movers: Mover[]; positive?: boolean }) {
   if (!movers.length) return <p className="text-sm text-[var(--text-dim)]">Kräver två perioder.</p>;
   return (
     <ul className="space-y-2">
-      {movers.map(({ row, delta }) => (
-        <li key={row.id} className="flex items-center justify-between text-sm gap-3">
-          <Link href={`/leverantorer/${slugify(row.supplier)}`} className="hover:text-[var(--compare-1)] truncate">
-            {row.supplier} <span className="text-[var(--text-dim)]">— {row.delivery_area}</span>
+      {movers.map((m) => (
+        <li key={`${m.supplier}|${m.delivery_area}`} className="flex items-center justify-between text-sm gap-3">
+          <Link href={`/leverantorer/${slugify(m.supplier)}`} className="hover:text-[var(--compare-1)] truncate">
+            {m.supplier} <span className="text-[var(--text-dim)]">— {m.delivery_area}</span>
           </Link>
           <span className="tabular-nums shrink-0" style={{ color: positive ? "var(--positive)" : "var(--text-dim)" }}>
-            {delta >= 0 ? "+" : "−"}{formatScore(Math.abs(delta))} → {formatScore(row.weighted_score)}
+            {m.delta >= 0 ? "+" : "−"}{formatScore(Math.abs(m.delta))} → {formatScore(m.to)}
           </span>
         </li>
       ))}

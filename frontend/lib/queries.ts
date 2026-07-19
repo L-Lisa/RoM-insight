@@ -55,10 +55,11 @@ export async function getPeriodRows(period: string): Promise<RomResult[]> {
   return out;
 }
 
-/** Rankinglistor rankar ENDAST betygsatta avtal. Avtal under AF:s betygsvillkor
- *  (minst 18 deltagare, 12 månaders verksamhet) har så små nämnare att viktat
- *  resultat blir statistiskt meningslöst (maj 2026: "bästa" avtalet utan betyg
- *  hade 1,15 på 2 deltagare). AF rankar dem inte — det gör inte vi heller. */
+/** Betygsregeln bor i lib/format.ts (isRankable) — klientsäker utan supabase.
+ *  Endast betygsatta avtal rankas i viktat resultat-mått: under AF:s
+ *  betygsvillkor (minst 18 deltagare, 12 månaders verksamhet) blir måttet
+ *  statistiskt meningslöst (maj 2026: "bästa" obetygsatta avtalet hade 1,15
+ *  på 2 deltagare). AF rankar dem inte — det gör inte vi heller. */
 export async function getTopContracts(period: string, limit = 5, ascending = false): Promise<RomResult[]> {
   const { data } = await supabase
     .from("rom_results")
@@ -357,7 +358,13 @@ export function diffRadar(
     }
     // Kontorsdetaljen räknas alltid: även vid oförändrat ANTAL kan kontor ha
     // flyttat (Kiruna stänger, Umeå öppnar = 3 → 3) — det ska också synas.
-    const change = officeChangeDetail(String(id), prevOffices, currOffices);
+    // Men: saknas kontorsrader för leverantören på ena sidan trots att
+    // aggregatet säger kontor > 0 (t.ex. partiellt applicerad fil) skulle
+    // detaljen falskt lista ALLA kontor som borta/nya — visa då bara antalet.
+    const oneSideMissing =
+      (!prevOffices.get(String(id)) && p.offices_count > 0) ||
+      (!currOffices.get(String(id)) && c.offices_count > 0);
+    const change = oneSideMissing ? null : officeChangeDetail(String(id), prevOffices, currOffices);
     if (p.offices_count !== c.offices_count || change !== null) {
       events.push({
         type: "radar_offices", supplier_name: c.supplier_name, supplier_id: c.supplier_id,

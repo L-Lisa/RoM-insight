@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { formatScore, slugify } from "@/lib/format";
+import { formatScore, isRankable, slugify } from "@/lib/format";
 import { CompareButton } from "@/components/CompareButton";
 
 /**
@@ -52,8 +52,8 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
       : rows;
     return [...filtered].sort((a, b) => {
       if (RATED_FIRST_KEYS.includes(sortKey)) {
-        const aRated = a.rating !== null ? 0 : 1;
-        const bRated = b.rating !== null ? 0 : 1;
+        const aRated = isRankable(a) ? 0 : 1;
+        const bRated = isRankable(b) ? 0 : 1;
         if (aRated !== bRated) return aRated - bRated;
       }
       const av = a[sortKey];
