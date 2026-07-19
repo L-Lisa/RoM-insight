@@ -21,6 +21,7 @@ import { marketInsight } from "@/lib/insights";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
 import { contractKey } from "@/lib/compare";
 import { RomResult } from "@/lib/types";
+import { AF_RATING_MIN_PARTICIPANTS, AF_RATING_MIN_MONTHS } from "@/lib/afRules";
 
 export const revalidate = 3600;
 
@@ -110,8 +111,8 @@ export default async function OverviewPage() {
           <LeaderboardTable rows={bottom5} weights={weights} />
         </section>
         <p className="lg:col-span-2 text-xs text-[var(--text-dim)]">
-          Endast betygsatta avtal rankas. Avtal utan betyg — under AF:s betygsvillkor (minst 18 deltagare,
-          minst 12 månaders verksamhet) — har för litet underlag för att viktat resultat ska gå att jämföra.
+          Endast betygsatta avtal rankas. Avtal utan betyg, under AF:s betygsvillkor (minst {AF_RATING_MIN_PARTICIPANTS} deltagare,
+          minst {AF_RATING_MIN_MONTHS} månaders verksamhet), har för litet underlag för att viktat resultat ska gå att jämföra.
           De syns i tabellerna på <Link href="/marknad" className="link">marknadssidan</Link> och profilsidorna.
         </p>
       </div>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { PeriodWeights } from "@/lib/types";
 import { formatScore } from "@/lib/format";
+import { AF_TERMINATION_THRESHOLD, AF_TERMINATION_THRESHOLD_LABEL } from "@/lib/afRules";
 
 /**
  * T5 interaktiv: dra i antalet ytterligare godkända resultatredovisningar och
@@ -10,7 +11,7 @@ import { formatScore } from "@/lib/format";
  * T5 — ett resultat väger olika per nivå (A lägst, C högst), därför ett spann.
  */
 
-const THRESHOLD = 0.2;
+const THRESHOLD = AF_TERMINATION_THRESHOLD;
 
 export function WhatIfSlider({
   currentWeightedSum,
@@ -60,7 +61,7 @@ export function WhatIfSlider({
         ) : possible ? (
           <span style={{ color: "var(--risk)" }}>kan räcka — beror på deltagarnas nivå</span>
         ) : (
-          <span className="text-[var(--text-dim)]">fortfarande under 0,2</span>
+          <span className="text-[var(--text-dim)]">fortfarande under {AF_TERMINATION_THRESHOLD_LABEL}</span>
         )}
       </p>
     </div>

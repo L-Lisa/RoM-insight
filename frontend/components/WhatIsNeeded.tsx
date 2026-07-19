@@ -1,6 +1,7 @@
 import { PeriodWeights, RomResult } from "@/lib/types";
 import { formatScore, periodLabel } from "@/lib/format";
 import { WhatIfSlider } from "@/components/WhatIfSlider";
+import { AF_TERMINATION_THRESHOLD, AF_TERMINATION_THRESHOLD_LABEL, AF_TERMINATION_MIN_MONTHS } from "@/lib/afRules";
 
 /**
  * T5 "Vad krävs?" — riskzonen som handling, inte bara varning.
@@ -11,7 +12,7 @@ import { WhatIfSlider } from "@/components/WhatIfSlider";
  * perioden renderas komponenten INTE (hellre saknad funktion än fel råd).
  */
 
-const THRESHOLD = 0.2;
+const THRESHOLD = AF_TERMINATION_THRESHOLD;
 
 export function WhatIsNeeded({
   contracts,
@@ -38,7 +39,7 @@ export function WhatIsNeeded({
     <section>
       <h2 className="text-base font-medium mb-1">Vad krävs?</h2>
       <p className="text-sm text-[var(--text-dim)] mb-3 max-w-3xl">
-        Avtal under 0,2-tröskeln med betyg 1 eller utan betyg — och ungefär vad som skulle krävas för att nå
+        Avtal under {AF_TERMINATION_THRESHOLD_LABEL}-tröskeln med betyg 1 eller utan betyg, och ungefär vad som skulle krävas för att nå
         över tröskeln på nuvarande deltagarvolym.
       </p>
       <div className="space-y-3">
@@ -59,11 +60,11 @@ export function WhatIsNeeded({
                 <p className="font-medium">{c.delivery_area}</p>
                 <p className="text-xs text-[var(--text-dim)] tabular-nums">
                   viktat {formatScore(c.weighted_score)} · {c.participants} deltagare
-                  {c.active_22_months === false && " · avtalet har ännu inte varit aktivt i 22 månader"}
+                  {c.active_22_months === false && ` · avtalet har ännu inte varit aktivt i ${AF_TERMINATION_MIN_MONTHS} månader`}
                 </p>
               </div>
               <p className="mt-2">
-                För att nå över 0,2 på nuvarande deltagarvolym krävs ungefär{" "}
+                För att nå över {AF_TERMINATION_THRESHOLD_LABEL} på nuvarande deltagarvolym krävs ungefär{" "}
                 <strong>
                   {fewest === most ? fewest : `${fewest}–${most}`} fler godkända resultatredovisningar
                 </strong>{" "}

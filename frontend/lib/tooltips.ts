@@ -1,3 +1,10 @@
+import {
+  AF_RATING_MIN_MONTHS,
+  AF_RATING_MIN_PARTICIPANTS,
+  AF_TERMINATION_MIN_MONTHS,
+  AF_TERMINATION_THRESHOLD_LABEL,
+} from "@/lib/afRules";
+
 /**
  * Tvålagersförklaringar (K4) — skrivs en gång, delas med systersajten.
  * Lager 1: AF:s formella definition (citerad/parafraserad med källa).
@@ -15,15 +22,15 @@ export const explain: Record<string, TwoLayerText> = {
   },
   viktatResultat: {
     af: "AF: \"Resultatmåttet är ett samlat mått som bygger på de resultat och deltagare som en leverantör haft under mätperioden. Det tar hänsyn till att deltagare står olika långt från arbetsmarknaden, utifrån nivåerna A, B och C.\" (Resultatuppföljningen, Arbetsförmedlingen)",
-    plain: "På ren svenska: hur stor andel av deltagarna som fick jobb eller började plugga. Viktningen mildrar effekten av svåra grupper — men den tar inte bort den helt, och den tar ingen hänsyn till hur arbetsmarknaden ser ut där du bor.",
+    plain: "På ren svenska: hur stor andel av deltagarna som fick jobb eller började plugga. Viktningen mildrar effekten av svåra grupper, men den tar inte bort den helt. Den tar heller ingen hänsyn till hur arbetsmarknaden ser ut där du bor.",
   },
   ejBetygsatt: {
-    af: "AF: för att en leverantör ska få betyg krävs minst 18 deltagare under mätperioden och minst 12 månaders verksamhet.",
-    plain: "På ren svenska: \"Betyg saknas\" betyder inte dåligt — det betyder att avtalet är för nytt eller för litet för att betygsättas ännu. Det gäller ungefär var fjärde avtal.",
+    af: `AF: för att en leverantör ska få betyg krävs minst ${AF_RATING_MIN_PARTICIPANTS} deltagare under mätperioden och minst ${AF_RATING_MIN_MONTHS} månaders verksamhet.`,
+    plain: "På ren svenska: \"Betyg saknas\" betyder inte dåligt. Avtalet är helt enkelt för nytt eller för litet för att betygsättas ännu.",
   },
   riskzon: {
-    af: "AF häver ett avtal vid resultatöversyn om leverantören (1) fått betyg 1 eller saknar betyg, (2) har viktat resultatmått under 0,2, och (3) inte presterat väl vid två efterföljande uppföljningar. Endast avtal aktiva i minst 22 månader omfattas. (Kvalitetsvillkor Rusta och matcha)",
-    plain: "På ren svenska: riskzonen är en informativ beräkning utifrån Arbetsförmedlingens publicerade villkor — den simulerar inte myndighetens beslut. AF publicerar dessutom sin egen riskflagga bara vissa perioder.",
+    af: `AF häver ett avtal vid resultatöversyn om leverantören (1) fått betyg 1 eller saknar betyg, (2) har viktat resultatmått under ${AF_TERMINATION_THRESHOLD_LABEL}, och (3) inte presterat väl vid två efterföljande uppföljningar. Endast avtal aktiva i minst ${AF_TERMINATION_MIN_MONTHS} månader omfattas. (Kvalitetsvillkor Rusta och matcha)`,
+    plain: "På ren svenska: riskzonen är en informativ beräkning utifrån Arbetsförmedlingens publicerade villkor och simulerar inte myndighetens beslut. AF publicerar dessutom sin egen riskflagga bara vissa perioder.",
   },
   nivaABC: {
     af: "AF delar in deltagare i nivå A, B och C utifrån bedömt avstånd till arbetsmarknaden, där C står längst ifrån. Resultat viktas med periodens vikter per nivå.",
@@ -31,19 +38,19 @@ export const explain: Record<string, TwoLayerText> = {
   },
   leveransomrade: {
     af: "AF: det geografiska område där leverantören har avtal att leverera tjänsten.",
-    plain: "På ren svenska: området där leverantören får ta emot deltagare. En leverantör kan ha avtal i många områden — och prestera olika i olika områden.",
+    plain: "På ren svenska: området där leverantören får ta emot deltagare. En leverantör kan ha avtal i många områden och prestera olika i olika områden.",
   },
   riskflagga: {
     af: "AF: kolumnen RISKERAR HÄVNING markerar avtal som riskerar att inte uppnå kraven på kvalitet i tjänsten. Kolumnen publiceras inte varje period.",
-    plain: "På ren svenska: en varningsflagga från AF själva. Saknas flaggan för en period betyder det att AF inte publicerade den då — inte att risken är noll.",
+    plain: "På ren svenska: en varningsflagga från AF själva. Saknas flaggan för en period betyder det att AF inte publicerade den då, inte att risken är noll.",
   },
   utgangen: {
     af: "Avtalet finns inte längre i Arbetsförmedlingens statistikfiler.",
-    plain: "På ren svenska: avtalet har lämnat statistiken. Varför — hävning, egen uppsägning eller annat — framgår inte av AF:s filer, så det påstår vi inget om.",
+    plain: "På ren svenska: avtalet har lämnat statistiken. Orsaken (hävning, egen uppsägning eller annat) står inte i filerna.",
   },
   percentil: {
     af: "Percentilen är RoM Insights beräkning: avtalets viktade resultatmått rankat mot samtliga betygsatta avtal i samma period. Avtal utan betyg ingår inte — under AF:s betygsvillkor är måttet inte jämförbart. Detta är inte ett AF-mått.",
-    plain: "På ren svenska: \"bättre än 78 % av alla betygsatta avtal\" säger mer än \"0,32\". Vår beräkning, gjord på AF:s siffror — metoden finns beskriven på metodsidan.",
+    plain: "På ren svenska: till exempel \"bättre än 78 % av alla betygsatta avtal\" säger mer än \"0,32\". Vår beräkning, gjord på AF:s siffror — metoden finns beskriven på metodsidan.",
   },
   hallbarhet: {
     af: "RR1 = första godkända resultatredovisningen (deltagaren fick arbete eller började studera). RR2 = godkänd uppföljningsredovisning för samma placering, senare i tid.",
@@ -55,7 +62,7 @@ export const explain: Record<string, TwoLayerText> = {
   },
   radarn: {
     af: "Arbetsförmedlingens söktjänst \"Sök leverantör inom rusta och matcha\" visar de leverantörer och kontor arbetssökande kan välja mellan just nu.",
-    plain: "På ren svenska: statistikfilerna släpar upp till två månader, men söktjänsten ändras när något händer. Radarn är RoM Insights återkommande koll av söktjänsten — försvinner en leverantör där syns det här, långt före statistiken. Varför någon försvinner framgår inte av AF:s data, så det påstår vi inget om i det enskilda fallet.",
+    plain: "På ren svenska: statistikfilerna släpar upp till två månader, men söktjänsten ändras när något händer. Radarn är RoM Insights återkommande koll av söktjänsten. Försvinner en leverantör där syns det här, långt före statistiken.",
   },
 };
 
@@ -66,5 +73,5 @@ export const tooltips = {
   betyg: explain.betyg.plain,
   riskHavning: explain.riskflagga.plain,
   resultattakt:
-    "Antal godkända resultat (RR1 — deltagaren fick arbete eller började studera) delat med antal deltagare i mätperioden.",
+    "Antal godkända resultat (RR1: deltagaren fick arbete eller började studera) delat med antal deltagare i mätperioden.",
 };

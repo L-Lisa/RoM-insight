@@ -22,7 +22,7 @@ export const revalidate = 3600;
 export const metadata = {
   title: "Händelser & Radarn",
   description:
-    "Händelseloggen för Rusta och matcha-marknaden: betygsändringar, nya avtal, avtal som lämnat statistiken — och Radarn, som bevakar vilka leverantörer som syns i Arbetsförmedlingens söktjänst.",
+    "Händelseloggen för Rusta och matcha-marknaden: betygsändringar, nya avtal, avtal som lämnat statistiken, och Radarn som bevakar vilka leverantörer som syns i Arbetsförmedlingens söktjänst.",
 };
 
 const TYPE_META: Record<MarketEvent["type"], { label: string; color: string }> = {
@@ -82,7 +82,7 @@ export default async function EventsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Händelser</h1>
         <p className="text-sm text-[var(--text-dim)] mt-1 max-w-2xl">
           Vad som ändrats mellan Arbetsförmedlingens släpp: betyg, nya avtal, avtal som lämnat statistiken och
-          AF:s riskflaggor. Endast fakta ur filerna — varför ett avtal lämnat statistiken framgår inte av AF:s data,
+          AF:s riskflaggor. Endast fakta ur filerna. Varför ett avtal lämnat statistiken framgår inte av AF:s data,
           så det påstår vi inget om.
         </p>
         <div className="mt-2"><DataStamp period={periods[periods.length - 1] ?? null} /></div>
@@ -94,13 +94,13 @@ export default async function EventsPage() {
             <h2 className="text-base font-medium flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full" style={{ background: "var(--signal)" }} aria-hidden />
               <Tooltip label="Radarn" layers={explain.radarn} />
-              <span className="text-[var(--text-dim)] font-normal">— vem syns i AF:s söktjänst?</span>
             </h2>
             <p className="text-sm text-[var(--text-dim)] mt-1 max-w-2xl">
-              Statistikfilerna släpar upp till två månader. Söktjänsten — listan arbetssökande väljer leverantör
-              ur — ändras när Arbetsförmedlingen agerar. Radarn jämför dem: {latestRadarRows.length} leverantörer
-              med {latestRadarRows.reduce((s, r) => s + r.offices_count, 0)} kontor syntes vid kontrollen{" "}
-              {radarDateLabel(latestRadar)}.
+              Statistiken och AF:s söktjänst är två olika listor. Vi jämför dem för att se vilka som försvinner
+              på vägen: vid senaste kontrollen ({radarDateLabel(latestRadar)}) syntes {latestRadarRows.length}{" "}
+              leverantörer med {latestRadarRows.reduce((s, r) => s + r.offices_count, 0)} kontor i söktjänsten.
+              Varför en leverantör saknas framgår inte av datan — det kan vara allt från namnbyte till avslutat
+              avtal. Värt att hålla ögonen på; mer än så påstår vi inte.
             </p>
           </div>
 
@@ -165,7 +165,7 @@ export default async function EventsPage() {
 
           <p className="text-xs text-[var(--text-dim)] leading-relaxed max-w-2xl">
             Varför försvinner någon ur söktjänsten? Arbetsförmedlingen publicerar inte orsaken. Det kan vara avtal
-            som löpt ut, eget utträde, ett namnbyte vi ännu inte kartlagt — eller hävning. Vi påstår inget i det
+            som löpt ut, eget utträde, ett namnbyte vi ännu inte kartlagt, eller hävning. Vi påstår inget i det
             enskilda fallet; när AF själva publicerar ett besked länkar vi det. Kolla gärna själv i{" "}
             <a
               href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"

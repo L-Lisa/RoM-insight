@@ -5,13 +5,13 @@ import { RatingBadge } from "@/components/Badges";
 import { DataStamp } from "@/components/DataStamp";
 import { getPeriodRows, getPeriods } from "@/lib/queries";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
+import { AF_TERMINATION_MIN_MONTHS, AF_TERMINATION_THRESHOLD, AF_TERMINATION_THRESHOLD_LABEL } from "@/lib/afRules";
 
 export const revalidate = 3600;
 
 export const metadata = {
   title: "Riskzonen",
-  description:
-    "Avtal som uppfyller Arbetsförmedlingens publicerade hävningskriterier i Rusta och matcha: betyg 1 eller saknas samt viktat resultat under 0,2. Informativ beräkning.",
+  description: `Avtal som uppfyller Arbetsförmedlingens publicerade hävningskriterier i Rusta och matcha: betyg 1 eller saknas samt viktat resultat under ${AF_TERMINATION_THRESHOLD_LABEL}. Informativ beräkning.`,
 };
 
 export default async function RiskZonePage() {
@@ -34,7 +34,7 @@ export default async function RiskZonePage() {
   // AF:s två publika kriterier som kan läsas ur filen (22-månaderskravet och
   // "två efterföljande uppföljningar" kräver avtalshistorik — anges i texten)
   const inZone = rows
-    .filter((r) => (r.rating === null || r.rating === 1) && r.weighted_score !== null && r.weighted_score < 0.2)
+    .filter((r) => (r.rating === null || r.rating === 1) && r.weighted_score !== null && r.weighted_score < AF_TERMINATION_THRESHOLD)
     .sort((a, b) => (a.weighted_score ?? 0) - (b.weighted_score ?? 0));
 
   return (
@@ -44,8 +44,8 @@ export default async function RiskZonePage() {
         <p className="text-sm text-[var(--text-dim)] mt-1 max-w-3xl">
           Avtal som i {latest ? periodLabel(latest) : "senaste perioden"} uppfyller de två hävningskriterier som går att
           läsa direkt ur Arbetsförmedlingens fil: <strong>betyg 1 eller saknas</strong> och{" "}
-          <strong>viktat resultatmått under 0,2</strong>. AF:s fullständiga prövning kräver dessutom att avtalet varit
-          aktivt i 22 månader och att bristerna består vid två uppföljningar i rad.
+          <strong>viktat resultatmått under {AF_TERMINATION_THRESHOLD_LABEL}</strong>. AF:s fullständiga prövning kräver dessutom att avtalet varit
+          aktivt i {AF_TERMINATION_MIN_MONTHS} månader och att bristerna består vid två uppföljningar i rad.
         </p>
         <p className="text-xs mt-2 px-3 py-2 card inline-block" style={{ color: "var(--risk)" }}>
           Informativ beräkning utifrån Arbetsförmedlingens publicerade villkor — simulerar inte myndighetens beslut.

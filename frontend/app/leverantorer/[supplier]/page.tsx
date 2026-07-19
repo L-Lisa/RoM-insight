@@ -141,7 +141,7 @@ export default async function SupplierPage({ params }: Props) {
           <span className="ml-auto"><PrintButton /></span>
           {isExited && (
             <span className="text-xs px-2 py-1 rounded-[var(--radius-badge)]" style={{ background: "rgba(224,108,108,0.12)", color: "var(--terminated)", border: "1px solid rgba(224,108,108,0.35)" }}>
-              Utgången ur statistiken — sista data {periodLabel(lastSeen)}
+              Utgången ur statistiken, sista data {periodLabel(lastSeen)}
             </span>
           )}
         </div>
@@ -160,7 +160,7 @@ export default async function SupplierPage({ params }: Props) {
           </span>
           Syntes inte i Arbetsförmedlingens söktjänst vid senaste kontrollen (
           {new Date(`${radarStatus.checked}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })}
-          ), trots avtal i senaste statistiken. AF publicerar inte orsaken — det kan vara avtal som löpt ut, eget
+          ), trots avtal i senaste statistiken. AF publicerar inte orsaken; det kan vara avtal som löpt ut, eget
           utträde, namnbyte eller hävning. Kolla själv i{" "}
           <a
             href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
@@ -179,7 +179,7 @@ export default async function SupplierPage({ params }: Props) {
           <span className="mono-label block mb-1">Läget just nu <DirectionArrow direction={biggest.insight.direction} /></span>
           {biggest.insight.text}
           <span className="block text-xs text-[var(--text-dim)] mt-2">
-            Automatiskt formulerad ur AF:s siffror (största avtalet) — varje tal är spårbart till källfilen.
+            Automatiskt formulerad ur AF:s siffror (största avtalet). Varje tal är spårbart till källfilen.
           </span>
         </div>
       )}
@@ -278,7 +278,7 @@ export default async function SupplierPage({ params }: Props) {
             percentile={percentileOf(biggest.latest.weighted_score, allScores)}
           />
           <p className="text-xs text-[var(--text-dim)] mt-3">
-            Viktat resultat {formatScore(biggest.latest.weighted_score)} · Percentilen är RoM Insights beräkning mot de {allScores.length} betygsatta avtalen i perioden — inte ett AF-mått. Avtal utan betyg ingår inte: under AF:s betygsvillkor är underlaget för litet för att jämföras.
+            Viktat resultat {formatScore(biggest.latest.weighted_score)} · Percentilen är RoM Insights beräkning mot de {allScores.length} betygsatta avtalen i perioden, inte ett AF-mått. Avtal utan betyg ingår inte: under AF:s betygsvillkor är underlaget för litet för att jämföras.
           </p>
         </section>
       )}
@@ -348,7 +348,7 @@ export default async function SupplierPage({ params }: Props) {
           </div>
           <p className="text-xs text-[var(--text-dim)] mt-2">
             Mixstapeln: ljusast = nivå A (närmast arbetsmarknaden), mörkast = nivå C. Hållbarheten är en
-            underskattning för nya avtal — sena placeringar hinner inte få uppföljning inom mätfönstret.
+            underskattning för nya avtal: sena placeringar hinner inte få uppföljning inom mätfönstret.
           </p>
         </section>
       )}
