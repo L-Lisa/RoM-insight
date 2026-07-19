@@ -39,3 +39,9 @@ export function slugify(name: string): string {
 export function areaSlug(area: string): string {
   return slugify(area);
 }
+
+/** Betygsregeln: endast betygsatta avtal rankas i viktat resultat-mått
+ *  (topplistor, lyft/tapp, percentiler, områdessnitt). Under AF:s betygsvillkor
+ *  (minst 18 deltagare, 12 månaders verksamhet) är måttet inte jämförbart.
+ *  Använd ALLTID denna predikat för rankningsbeslut, aldrig inline-checkar. */
+export const isRankable = (r: { rating: number | null }): boolean => r.rating !== null;

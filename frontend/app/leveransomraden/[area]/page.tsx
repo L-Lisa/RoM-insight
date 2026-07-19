@@ -6,7 +6,7 @@ import { RatingBadge, RiskBadge } from "@/components/Badges";
 import { CompareButton } from "@/components/CompareButton";
 import { DataStamp } from "@/components/DataStamp";
 import { getAreaMunicipalities, getAreaRows, getLatestPeriod } from "@/lib/queries";
-import { formatScore, periodLabel, slugify } from "@/lib/format";
+import { formatScore, isRankable, periodLabel, slugify } from "@/lib/format";
 
 export const revalidate = 3600;
 
@@ -39,9 +39,9 @@ export default async function AreaPage({ params }: Props) {
   if (!areaRows.length) notFound();
 
   // Endast betygsatta avtal rankas (#) — avtal utan betyg listas sist, orankade:
-  // under AF:s betygsvillkor är viktat resultat inte jämförbart.
-  const rated = areaRows.filter((r) => r.rating !== null);
-  const unrated = areaRows.filter((r) => r.rating === null);
+  // under AF:s betygsvillkor är viktat resultat inte jämförbart (betygsregeln).
+  const rated = areaRows.filter(isRankable);
+  const unrated = areaRows.filter((r) => !isRankable(r));
   const rows = [...rated, ...unrated];
 
   const top5Keys = new Set(rated.slice(0, 5).map((r) => r.id));
@@ -54,8 +54,10 @@ export default async function AreaPage({ params }: Props) {
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight mt-2">Rusta och matcha i {areaName}</h1>
         <p className="text-sm text-[var(--text-dim)] mt-1">
-          {rows.length} avtal · {periodLabel(latest)} · betygsatta avtal rankade på viktat resultat
-          {unrated.length > 0 && ` · ${unrated.length} avtal utan betyg listas sist, orankade`}
+          {rows.length} avtal · {periodLabel(latest)}
+          {rated.length > 0
+            ? ` · betygsatta avtal rankade på viktat resultat${unrated.length > 0 ? ` · ${unrated.length} avtal utan betyg listas sist, orankade` : ""}`
+            : " · inga avtal har betyg ännu — inget rankas"}
         </p>
         {municipalities.length > 0 && (
           <p className="text-xs text-[var(--text-dim)] mt-1 max-w-3xl">
@@ -82,9 +84,9 @@ export default async function AreaPage({ params }: Props) {
             {rows.map((row, i) => (
               <tr
                 key={row.id}
-                className={`hover:bg-[var(--bg-hover)] transition-colors ${top5Keys.has(row.id) ? "" : "opacity-80"}`}
+                className={`hover:bg-[var(--bg-hover)] transition-colors ${rated.length === 0 || top5Keys.has(row.id) ? "" : "opacity-80"}`}
               >
-                <td className="px-4 py-3 text-[var(--text-faint)] tabular-nums">{row.rating !== null ? i + 1 : "–"}</td>
+                <td className="px-4 py-3 text-[var(--text-faint)] tabular-nums">{row.rating !== null && row.weighted_score !== null ? i + 1 : "–"}</td>
                 <td className="px-4 py-3 font-medium">
                   <Link href={`/leverantorer/${slugify(row.supplier)}`} className="hover:text-[var(--compare-1)]">
                     {row.supplier}

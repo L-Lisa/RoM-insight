@@ -17,6 +17,7 @@ Varsam mot AF: 0.4 s paus mellan anrop, ärlig User-Agent. Kör tidigast varje v
 Vid 5xx från AF: avbryt utan att skriva något (ingen partiell snapshot).
 """
 import json
+import math
 import sys
 import time
 import urllib.error
@@ -65,6 +66,10 @@ def office_rows(items: list, today: str) -> list[tuple]:
             # värde ska stoppa körningen, inte hamna oescapat i SQL:en.
             lat = float(koord["latitud"]) if koord.get("latitud") is not None else None
             lng = float(koord["longitud"]) if koord.get("longitud") is not None else None
+            # NaN/Infinity passerar float() men blir ogiltig SQL — stoppa körningen.
+            for v in (lat, lng):
+                if v is not None and not math.isfinite(v):
+                    sys.exit(f"Icke-finit koordinat ({v!r}) för {it['namn']} — ingen SQL skriven.")
             rows.append((
                 today, str(it["id"]), it["namn"].strip(), postort, address,
                 lat, lng, it.get("nyval_tillatet"),
@@ -140,13 +145,13 @@ def main() -> None:
     )
     out.write_text(
         "-- Radarn-snapshot genererad av scripts/fetch_sokleverantor.py\n"
-        "-- Idempotent: körs samma dag två gånger vinner senaste hämtningen.\n"
+        "-- Idempotent: delete + insert per datum (senaste hämtningen samma dag vinner,\n"
+        "-- samma regel som kontorsfilen — även leverantörer som försvunnit mellan\n"
+        "-- två körningar rensas, annars divergerar tabellerna).\n"
+        f"delete from sokleverantor_snapshots where snapshot_date = '{today}';\n"
         "insert into sokleverantor_snapshots (snapshot_date, af_leverantor_id, supplier_name, offices_count, any_nyval)\nvalues\n"
         + rows
-        + "\non conflict (snapshot_date, af_leverantor_id) do update\n"
-        "  set supplier_name = excluded.supplier_name,\n"
-        "      offices_count = excluded.offices_count,\n"
-        "      any_nyval = excluded.any_nyval;\n\n"
+        + ";\n\n"
         "-- Koppla supplier_id via kanoniskt namn + kända namnvarianter\n"
         f"update sokleverantor_snapshots sn set supplier_id = s.id\n"
         f"  from suppliers s where sn.snapshot_date = '{today}' and sn.supplier_id is null and lower(sn.supplier_name) = lower(s.name);\n"

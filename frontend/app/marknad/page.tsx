@@ -16,7 +16,11 @@ export default async function MarketPage() {
   const rows = latest ? await getPeriodRows(latest) : [];
 
   // RR1 och RR2 redovisas alltid separat (results-kolumnen i DB = enbart RR1).
+  // Hållbarhet kräver KOMPLETT nivådata (samma regel som ShowSource) — vid
+  // partiell backfill vore kvoten annars räknad på en annan bas än RR1-kolumnen.
   const tableRows: MarketRow[] = rows.map((r) => {
+    const levels = [r.rr1_a, r.rr1_b, r.rr1_c, r.rr2_a, r.rr2_b, r.rr2_c];
+    const hasLevels = levels.every((v) => v !== null && v !== undefined);
     const rr1 = (r.rr1_a ?? 0) + (r.rr1_b ?? 0) + (r.rr1_c ?? 0);
     const rr2 = (r.rr2_a ?? 0) + (r.rr2_b ?? 0) + (r.rr2_c ?? 0);
     return {
@@ -27,7 +31,7 @@ export default async function MarketPage() {
       participants: r.participants,
       results: r.results,
       rr2,
-      sustainability: rr1 > 0 ? Math.round((rr2 / rr1) * 100) : null,
+      sustainability: hasLevels && rr1 > 0 ? Math.round((rr2 / rr1) * 100) : null,
     };
   });
 

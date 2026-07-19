@@ -41,13 +41,13 @@ function riskCount(rows: RomResult[]): number {
   ).length;
 }
 
-export function buildIssue(prev: RomResult[], curr: RomResult[], prevPeriod: string, period: string): Issue {
+/** Lyft/tapp mellan två perioder — ENDA källan för denna beräkning (startsidan
+ *  och Marknadsbrevet delar den; två kopior drev tidigare isär). Endast avtal
+ *  med betyg i båda perioderna (betygsregeln, se isRankable i queries.ts) —
+ *  utan betyg är viktat resultat inte jämförbart. Sorterad störst lyft först. */
+export function computeMovers(prev: RomResult[], curr: RomResult[]): Mover[] {
   const key = (r: RomResult) => r.ka_number ?? `${r.supplier}|${r.delivery_area}`;
   const prevMap = new Map(prev.map((r) => [key(r), r]));
-
-  // Lyft/tapp endast för avtal med betyg i båda perioderna — utan betyg är
-  // viktat resultat inte jämförbart (för små nämnare). Riskzonen (riskCount)
-  // följer däremot AF:s publika kriterier och inkluderar medvetet obetygsatta.
   const movers: Mover[] = [];
   for (const c of curr) {
     const p = prevMap.get(key(c));
@@ -62,6 +62,13 @@ export function buildIssue(prev: RomResult[], curr: RomResult[], prevPeriod: str
     }
   }
   movers.sort((a, b) => b.delta - a.delta);
+  return movers;
+}
+
+export function buildIssue(prev: RomResult[], curr: RomResult[], prevPeriod: string, period: string): Issue {
+  // Riskzonen (riskCount) följer AF:s publika kriterier och inkluderar
+  // medvetet obetygsatta — till skillnad från lyft/tapp.
+  const movers = computeMovers(prev, curr);
 
   const events = diffPeriods(prev, curr, prevPeriod, period);
   const rated = curr.filter((r) => r.rating !== null);
@@ -78,8 +85,10 @@ export function buildIssue(prev: RomResult[], curr: RomResult[], prevPeriod: str
     ratingChanges: events.filter((e) => e.type === "rating_changed").length,
     riskPrev: riskCount(prev),
     riskCurr: riskCount(curr),
-    lifts: movers.slice(0, 3),
-    drops: movers.slice(-3).reverse(),
+    // Teckenfilter: ett lyft är alltid en ökning, ett tapp alltid en minskning —
+    // vid få kvalificerade avtal får listorna annars överlappa/felmärkas.
+    lifts: movers.filter((m) => m.delta > 0).slice(0, 3),
+    drops: movers.filter((m) => m.delta < 0).slice(-3).reverse(),
     ratedCount: rated.length,
     lowestRatingCount: lowest.length,
     lowestRatingShare: rated.length ? Math.round((lowest.length / rated.length) * 100) : 0,

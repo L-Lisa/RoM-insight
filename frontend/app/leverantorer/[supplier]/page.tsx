@@ -25,7 +25,7 @@ import {
   percentileOf,
 } from "@/lib/queries";
 import { contractInsight } from "@/lib/insights";
-import { formatScore, periodLabel, periodShort, slugify } from "@/lib/format";
+import { formatScore, isRankable, periodLabel, periodShort, slugify } from "@/lib/format";
 import { RomResult } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -76,10 +76,10 @@ export default async function SupplierPage({ params }: Props) {
   const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
   const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
   const weightsByPeriod = new Map((await getAllPeriodWeights()).map((w) => [w.period, w]));
-  // Percentil och områdessnitt räknas ENDAST mot betygsatta avtal — under AF:s
-  // betygsvillkor är viktat resultat inte jämförbart (för små nämnare).
+  // Percentil och områdessnitt räknas ENDAST mot betygsatta avtal (betygsregeln,
+  // isRankable) — under AF:s betygsvillkor är viktat resultat inte jämförbart.
   const allScores = latestAll
-    .filter((r) => r.rating !== null)
+    .filter(isRankable)
     .map((r) => r.weighted_score)
     .filter((v): v is number => v !== null && v !== undefined);
   // C2: benchmark mot områdets snitt (RoM Insights beräkning, oviktat medel)
@@ -87,7 +87,7 @@ export default async function SupplierPage({ params }: Props) {
   {
     const acc = new Map<string, number[]>();
     for (const r of latestAll) {
-      if (r.weighted_score !== null && r.rating !== null) acc.set(r.delivery_area, [...(acc.get(r.delivery_area) ?? []), r.weighted_score]);
+      if (r.weighted_score !== null && isRankable(r)) acc.set(r.delivery_area, [...(acc.get(r.delivery_area) ?? []), r.weighted_score]);
     }
     for (const [a, v] of acc) areaAvg.set(a, v.reduce((x, y) => x + y, 0) / v.length);
   }
