@@ -42,22 +42,31 @@ export function RatingBadge({ rating }: { rating: number | null }) {
 }
 
 /** Viktat resultat med stapel — samma skala som konstellationsgrafen (kapad vid 0,7)
- *  så att stapellängder är jämförbara mellan vyer. */
+ *  så att stapellängder är jämförbara mellan vyer. Tvåfärgad: värden under
+ *  AF:s 0,2-tröskel fylls i amber (samma färgspråk som riskzonen), övriga i
+ *  blått; en tunn markering visar tröskeln (samma orange som konstellationens
+ *  tröskellinje). */
 export function ScoreBar({ score }: { score: number | null }) {
   if (score === null || score === undefined) {
     return <span className="text-[var(--text-faint)]">–</span>;
   }
   const w = Math.min(score / 0.7, 1) * 100;
+  const threshold = (0.2 / 0.7) * 100;
+  const belowThreshold = score < 0.2;
   return (
     <span className="inline-flex items-center gap-2">
       <span
-        className="h-1.5 w-14 rounded-full overflow-hidden shrink-0"
-        style={{ background: "var(--line-soft)" }}
+        className="relative h-1.5 w-14 rounded-full overflow-hidden shrink-0"
+        style={{ background: "var(--line)" }}
         aria-hidden
       >
         <span
-          className="block h-full rounded-full"
-          style={{ width: `${w}%`, background: "var(--rating-fill)", opacity: 0.85 }}
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{ width: `${w}%`, background: belowThreshold ? "var(--risk)" : "var(--rating-fill)", opacity: 0.9 }}
+        />
+        <span
+          className="absolute inset-y-0 w-px"
+          style={{ left: `${threshold}%`, background: "var(--risk)", opacity: 0.8 }}
         />
       </span>
       <span className="tabular-nums">{formatScore(score)}</span>

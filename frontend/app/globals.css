@@ -89,6 +89,29 @@ a.link:hover {
   text-decoration: underline;
 }
 
+/* Laddningssnurra (components/Spinner.tsx) — diskret, aldrig blinkande */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  border-top-color: var(--rating-fill);
+  animation: spinner-rotate 0.8s linear infinite;
+}
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: spinner-pulse 1.6s ease-in-out infinite;
+    border-color: var(--rating-fill);
+  }
+  @keyframes spinner-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.8; }
+  }
+}
+
 /* Maskering av låst innehåll (topp 5-modellen) */
 .locked-blur {
   filter: blur(6px);

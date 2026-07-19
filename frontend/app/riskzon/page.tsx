@@ -71,6 +71,14 @@ export default async function RiskZonePage() {
         </div>
       </div>
 
+      {afFlagPeriod && latest && afFlagPeriod !== latest && (
+        <p className="text-sm text-[var(--text-dim)] max-w-3xl">
+          AF publicerade riskflaggan senast i {periodLabel(afFlagPeriod)} — kolumnen togs bort ur{" "}
+          {periodLabel(latest)}-filen. Vi visar den senast publicerade flaggan; övriga kriterier beräknas på{" "}
+          {periodLabel(latest)}-data.
+        </p>
+      )}
+
       <div className="card overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
           <thead className="text-left">

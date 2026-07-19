@@ -10,6 +10,7 @@ import { WhatIsNeeded } from "@/components/WhatIsNeeded";
 import { PrintButton } from "@/components/PrintButton";
 import { CompareButton } from "@/components/CompareButton";
 import { ShowSource } from "@/components/ShowSource";
+import { SourceBreakdown } from "@/components/SourceBreakdown";
 import {
   getAllPeriodWeights,
   getLatestPeriod,
@@ -246,6 +247,21 @@ export default async function SupplierPage({ params }: Props) {
           </table>
         </div>
       </section>
+
+      {!isExited && biggest && biggest.latest.dataset_date === latestPeriod && biggest.latest.weighted_score !== null && (
+        <section className="card p-5">
+          <h2 className="text-base font-medium mb-1">
+            Så räknas resultatet <span className="text-[var(--text-dim)] font-normal">— största avtalet ({biggest.area}, {periodLabel(biggest.latest.dataset_date)})</span>
+          </h2>
+          <p className="text-sm text-[var(--text-dim)] mb-4">
+            AF:s nivådata och formeln bakom det viktade resultatet, uträknad live.
+          </p>
+          <SourceBreakdown row={biggest.latest} weights={weightsByPeriod.get(biggest.latest.dataset_date) ?? null} />
+          <p className="text-xs text-[var(--text-dim)]">
+            Gäller största avtalet. För övriga avtal: klicka &rdquo;källa&rdquo; vid valfri rad i avtalstabellen ovan.
+          </p>
+        </section>
+      )}
 
       {!isExited && latestPeriod && (
         <WhatIsNeeded contracts={latestRows} weights={weights} period={latestPeriod} />
