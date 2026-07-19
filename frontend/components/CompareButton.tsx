@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getCompare, subscribeCompare, toggleCompare, MAX_COMPARE } from "@/lib/compare";
+import { contractKey, getCompare, subscribeCompare, toggleCompare, MAX_COMPARE } from "@/lib/compare";
 
 /** Radknapp: lägg till/ta bort ett avtal i jämförelsen (brickan följer med överallt). */
 export function CompareButton({ supplier, area }: { supplier: string; area: string }) {
-  const key = `${supplier}|${area}`;
+  const key = contractKey(supplier, area);
   const [state, setState] = useState<{ selected: boolean; full: boolean }>({ selected: false, full: false });
 
   useEffect(() => {

@@ -1,12 +1,16 @@
 /**
  * Jämförelsevalet: delas mellan alla sidor via localStorage + ett fönsterevent.
- * Nyckelformat: "leverantör|område" — samma som /jamfor?keys=. Max 6 (K2/K8).
- * Endast klientkomponenter importerar detta.
+ * Nyckelformat: "leverantör|område" — samma som /jamfor?keys=. Max 8 (K2/K8);
+ * samma tak som konstellationens urval, EN siffra för hela sajten.
+ * Konstanterna är säkra att importera i serverkomponenter.
  */
 
 const STORAGE_KEY = "rominsight-compare";
 const CHANGE_EVENT = "rominsight-compare-changed";
-export const MAX_COMPARE = 6;
+export const MAX_COMPARE = 8;
+
+/** EN definition av nyckelformatet (trådformat för localStorage + /jamfor?keys=). */
+export const contractKey = (supplier: string, deliveryArea: string): string => `${supplier}|${deliveryArea}`;
 
 export function getCompare(): string[] {
   if (typeof window === "undefined") return [];

@@ -3,7 +3,7 @@
 /*
   ROM Insight — design tokens (Rusta & Matcha Analytics)
   Mörkt analysläge. Färgsemantik per kravprofilens §4e:
-  - Jämförelselinjer: dämpade blå-lila nyanser (max 5) + EN reserverad signalfärg
+  - Jämförelselinjer: dämpade nyanser (max 8) + EN reserverad signalfärg
   - Rött ENDAST för hävning/utgånget (faktum) — aldrig för låga betyg (värdering)
   - Amber för riskflagga
   - Betyg som neutrala fyllnadsnivåer, inte rött→grönt
@@ -28,6 +28,12 @@
   --compare-3: #62b6d9;
   --compare-4: #8aa8ec;
   --compare-5: #b095e6;
+  /* 6–8: nyanser med hue-avstånd från både 1–5 och de semantiska färgerna
+     (--risk amber, --terminated röd, --signal teal); ≥3:1 mot bakgrunden
+     i både mörkt tema och print-ljust */
+  --compare-6: #c06bb8;
+  --compare-7: #7d9a3f;
+  --compare-8: #d3739b;
   --signal: #4adeb9; /* reserverad: "din leverantör" / vald linje */
 
   --risk: #d9a03f;        /* riskflagga (amber) */

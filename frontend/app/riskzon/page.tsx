@@ -95,7 +95,11 @@ export default async function RiskZonePage() {
                       {r.supplier}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-dim)]">{r.delivery_area}</td>
+                  <td className="px-4 py-3 text-[var(--text-dim)]">
+                    <Link href={`/leveransomraden/${encodeURIComponent(r.delivery_area)}`} className="hover:text-[var(--compare-1)]">
+                      {r.delivery_area}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums" style={{ color: "var(--risk)" }}>{formatScore(r.weighted_score)}</td>
                   <td className="px-4 py-3 text-right"><RatingBadge rating={r.rating} /></td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.participants}</td>
