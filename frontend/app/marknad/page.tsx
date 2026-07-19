@@ -46,7 +46,7 @@ export default async function MarketPage() {
         </p>
         <div className="mt-2"><DataStamp period={latest} /></div>
       </div>
-      <MarketTable rows={tableRows} />
+      <MarketTable rows={tableRows} periodText={latest ? periodLabel(latest) : undefined} />
     </div>
   );
 }

@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import { CloudSeries } from "@/lib/types";
 import { formatScore, periodShort } from "@/lib/format";
+import { selectionColor } from "@/components/SelectionChips";
+import { contractKey } from "@/lib/compare";
 
 /**
  * Konstellationsgrafen — sajtens signatur ("lyfta en stjärna ur natthimlen").
@@ -13,7 +15,6 @@ import { formatScore, periodShort } from "@/lib/format";
  * segment dras aldrig över luckor — saknad period är ett hål, inte en linje.
  */
 
-const GROUP_COLORS = ["var(--compare-1)", "var(--compare-2)", "var(--compare-3)", "var(--compare-4)", "var(--compare-5)"];
 const W = 960;
 const H = 420;
 const PAD = { top: 16, right: 16, bottom: 28, left: 44 };
@@ -40,7 +41,7 @@ export function ConstellationCloud({
   const x = (i: number) => PAD.left + (periods.length === 1 ? iw / 2 : (i / (periods.length - 1)) * iw);
   const y = (v: number) => PAD.top + ih - (Math.min(v, Y_MAX) / Y_MAX) * ih;
 
-  const keyOf = (s: CloudSeries) => `${s.supplier}|${s.delivery_area}`;
+  const keyOf = (s: CloudSeries) => contractKey(s.supplier, s.delivery_area);
   const byKey = useMemo(() => new Map(cloud.map((s) => [keyOf(s), s])), [cloud]);
 
   // Sammanhängande segment (inga linjer över luckor)
@@ -141,7 +142,7 @@ export function ConstellationCloud({
           {selected.map((key, idx) => {
             const s = byKey.get(key);
             if (!s) return null;
-            const color = idx === selected.length - 1 ? "var(--signal)" : GROUP_COLORS[idx % GROUP_COLORS.length];
+            const color = selectionColor(idx, selected.length);
             return (
               <g key={key}>
                 {segments(s).map((d, i) => (

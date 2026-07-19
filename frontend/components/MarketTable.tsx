@@ -40,7 +40,7 @@ const COLUMNS: { key: SortKey; label: string; numeric: boolean }[] = [
  *  under AF:s betygsvillkor är måttet inte jämförbart (för små nämnare). */
 const RATED_FIRST_KEYS: SortKey[] = ["weighted_score"];
 
-export function MarketTable({ rows }: { rows: MarketRow[] }) {
+export function MarketTable({ rows, periodText }: { rows: MarketRow[]; periodText?: string }) {
   const [sortKey, setSortKey] = useState<SortKey>("weighted_score");
   const [desc, setDesc] = useState(true);
   const [query, setQuery] = useState("");
@@ -109,7 +109,11 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
                     {r.supplier}
                   </Link>
                 </td>
-                <td className="px-4 py-2.5 text-[var(--text-dim)]">{r.delivery_area}</td>
+                <td className="px-4 py-2.5 text-[var(--text-dim)]">
+                  <Link href={`/leveransomraden/${encodeURIComponent(r.delivery_area)}`} className="hover:text-[var(--compare-1)]">
+                    {r.delivery_area}
+                  </Link>
+                </td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{formatScore(r.weighted_score)}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.rating ?? <span className="text-[var(--text-faint)]" title="Ej betygsatt ännu">·</span>}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.participants}</td>
@@ -125,7 +129,7 @@ export function MarketTable({ rows }: { rows: MarketRow[] }) {
         </table>
       </div>
       <p className="text-xs text-[var(--text-dim)]">
-        {sorted.length} avtal visas. Vid sortering på viktat resultat hamnar avtal utan betyg sist —
+        {sorted.length} avtal visas{periodText ? ` (${periodText})` : ""}. Vid sortering på viktat resultat hamnar avtal utan betyg sist —
         under AF:s betygsvillkor (minst 18 deltagare, 12 månaders verksamhet) är måttet inte jämförbart.
       </p>
     </div>

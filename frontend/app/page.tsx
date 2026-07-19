@@ -19,6 +19,7 @@ import { computeMovers, Mover } from "@/lib/newsletter";
 import { PeriodWeights } from "@/lib/types";
 import { marketInsight } from "@/lib/insights";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
+import { contractKey } from "@/lib/compare";
 import { RomResult } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -81,7 +82,7 @@ export default async function OverviewPage() {
           Varje linje är ett avtal (leverantör × område). Sök en leverantör för att lysa upp deras avtal mot
           resten av marknaden, eller klicka direkt i molnet.
         </p>
-        <HomeConstellation periods={periods} initialKeys={top5.map((r) => `${r.supplier}|${r.delivery_area}`)} />
+        <HomeConstellation periods={periods} initialKeys={top5.map((r) => contractKey(r.supplier, r.delivery_area))} />
       </section>
 
       <section className="card p-5">

@@ -26,6 +26,7 @@ import {
 } from "@/lib/queries";
 import { contractInsight } from "@/lib/insights";
 import { formatScore, isRankable, periodLabel, periodShort, slugify } from "@/lib/format";
+import { MAX_COMPARE } from "@/lib/compare";
 import { RomResult } from "@/lib/types";
 
 export const revalidate = 3600;
@@ -92,6 +93,10 @@ export default async function SupplierPage({ params }: Props) {
     for (const [a, v] of acc) areaAvg.set(a, v.reduce((x, y) => x + y, 0) / v.length);
   }
 
+  // Områdessidan finns bara för områden i senaste perioden — historiska
+  // områden länkas inte (annars 404 via notFound på områdessidan).
+  const currentAreas = new Set(latestAll.map((r) => r.delivery_area));
+
   const latestRows = rows.filter((r) => r.dataset_date === latestPeriod);
   const isExited = latestRows.length === 0;
   const lastSeen = rows[rows.length - 1].dataset_date;
@@ -122,7 +127,7 @@ export default async function SupplierPage({ params }: Props) {
   const ratingPeriods = Array.from(new Set(ratings.map((r) => r.period))).sort();
   const ratingAreas = Array.from(new Set(ratings.map((r) => r.delivery_area))).sort();
 
-  const compareKeys = areas.slice(0, 6).map((a) => `${name}|${a.area}`).join(",");
+  const compareKeys = areas.slice(0, MAX_COMPARE).map((a) => `${name}|${a.area}`).join(",");
 
   return (
     <div className="space-y-8">
@@ -142,7 +147,7 @@ export default async function SupplierPage({ params }: Props) {
         <p className="text-sm text-[var(--text-dim)] mt-1">
           {isExited
             ? `Fanns i statistiken t.o.m. ${periodLabel(lastSeen)}. Varför avtalen lämnat statistiken framgår inte av Arbetsförmedlingens filer.`
-            : `${latestRows.length} avtal i ${latestRows.length === 1 ? "ett" : latestRows.length} leveransområden · senaste mätning ${periodLabel(latestPeriod!)}`}
+            : `${latestRows.length} avtal i ${latestRows.length} ${latestRows.length === 1 ? "område" : "områden"} (${periodLabel(latestPeriod!)})${byArea.size > latestRows.length ? ` · ${byArea.size} områden historiskt` : ""}`}
         </p>
         <div className="mt-2"><DataStamp period={isExited ? lastSeen : latestPeriod} /></div>
       </div>
@@ -200,7 +205,20 @@ export default async function SupplierPage({ params }: Props) {
             <tbody className="divide-y divide-[var(--line-soft)]">
               {areas.map(({ area, latest, insight }) => (
                 <tr key={area} className="hover:bg-[var(--bg-hover)] transition-colors">
-                  <td className="px-4 py-3">{area}</td>
+                  <td className="px-4 py-3">
+                    {currentAreas.has(area) ? (
+                      <Link href={`/leveransomraden/${encodeURIComponent(area)}`} className="hover:text-[var(--compare-1)]">
+                        {area}
+                      </Link>
+                    ) : (
+                      area
+                    )}
+                    {latest.dataset_date !== latestPeriod && (
+                      <span className="ml-2 text-xs text-[var(--text-faint)] whitespace-nowrap">
+                        t.o.m. {periodLabel(latest.dataset_date)}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <ShowSource row={latest} weights={weightsByPeriod.get(latest.dataset_date) ?? null} />
                   </td>
@@ -289,7 +307,11 @@ export default async function SupplierPage({ params }: Props) {
                   const rr2 = (r.rr2_a ?? 0) + (r.rr2_b ?? 0) + (r.rr2_c ?? 0);
                   return (
                     <tr key={r.id} className="hover:bg-[var(--bg-hover)] transition-colors">
-                      <td className="px-4 py-3">{r.delivery_area}</td>
+                      <td className="px-4 py-3">
+                        <Link href={`/leveransomraden/${encodeURIComponent(r.delivery_area)}`} className="hover:text-[var(--compare-1)]">
+                          {r.delivery_area}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3">
                         {tot > 0 ? (
                           <span className="inline-flex h-3 w-40 rounded-sm overflow-hidden" title={`A ${pa} · B ${pb} · C ${pc}`}>
@@ -351,7 +373,15 @@ export default async function SupplierPage({ params }: Props) {
               <tbody className="divide-y divide-[var(--line-soft)]">
                 {ratingAreas.map((area) => (
                   <tr key={area}>
-                    <td className="px-4 py-2.5 sticky left-0 z-10" style={{ background: "var(--bg-card)" }}>{area}</td>
+                    <td className="px-4 py-2.5 sticky left-0 z-10" style={{ background: "var(--bg-card)" }}>
+                      {currentAreas.has(area) ? (
+                        <Link href={`/leveransomraden/${encodeURIComponent(area)}`} className="hover:text-[var(--compare-1)]">
+                          {area}
+                        </Link>
+                      ) : (
+                        area
+                      )}
+                    </td>
                     {ratingPeriods.map((p) => {
                       const cell = ratings.find((r) => r.delivery_area === area && r.period === p);
                       return (

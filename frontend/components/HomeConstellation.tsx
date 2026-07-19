@@ -5,6 +5,9 @@ import Link from "next/link";
 import { CloudSeries } from "@/lib/types";
 import { getAllCloudSeries } from "@/lib/queries";
 import { ConstellationCloud } from "@/components/ConstellationCloud";
+import { SelectionChips, SpotlightNote, spotlightSelection } from "@/components/SelectionChips";
+import { MAX_COMPARE } from "@/lib/compare";
+import { periodLabel } from "@/lib/format";
 
 /**
  * Konstellationen på startsidan + leverantörsspotlight.
@@ -12,20 +15,14 @@ import { ConstellationCloud } from "@/components/ConstellationCloud";
  * — startsidans first load förblir lätt (SEO-planens Core Web Vitals-krav).
  */
 
-const MAX_SELECTED = 6;
-
-function lastVal(s: CloudSeries): number | null {
-  for (let i = s.values.length - 1; i >= 0; i--) {
-    if (s.values[i] !== null) return s.values[i];
-  }
-  return null;
-}
-
 export function HomeConstellation({ periods, initialKeys }: { periods: string[]; initialKeys: string[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [cloud, setCloud] = useState<CloudSeries[] | null>(null);
-  const [selected, setSelected] = useState<string[]>(initialKeys.slice(0, MAX_SELECTED));
+  const [selected, setSelected] = useState<string[]>(initialKeys.slice(0, MAX_COMPARE));
   const [query, setQuery] = useState("");
+  const [spotlightNote, setSpotlightNote] = useState<{ supplier: string; total: number } | null>(null);
+
+  const latestIdx = periods.length - 1;
 
   useEffect(() => {
     const el = ref.current;
@@ -43,25 +40,34 @@ export function HomeConstellation({ periods, initialKeys }: { periods: string[];
     return () => io.disconnect();
   }, [periods, cloud]);
 
-  // Spotlight: leverantörsträffar grupperade per leverantör
+  // Spotlight: leverantörsträffar grupperade per leverantör. Sortering:
+  // startsWith före substring, med-i-senaste-perioden före historiska, sedan namn.
   const matches = useMemo(() => {
     if (!cloud || query.trim().length < 2) return [];
-    const q = query.toLowerCase();
+    const q = query.trim().toLowerCase();
     const bySupplier = new Map<string, CloudSeries[]>();
     for (const s of cloud) {
       if (s.supplier.toLowerCase().includes(q)) {
         bySupplier.set(s.supplier, [...(bySupplier.get(s.supplier) ?? []), s]);
       }
     }
-    return Array.from(bySupplier.entries()).slice(0, 6);
-  }, [cloud, query]);
+    return Array.from(bySupplier.entries())
+      .sort(([aName, aSeries], [bName, bSeries]) => {
+        const starts = (n: string) => (n.toLowerCase().startsWith(q) ? 0 : 1);
+        const inLatest = (series: CloudSeries[]) => (series.some((s) => s.values[latestIdx] !== null) ? 0 : 1);
+        return (
+          starts(aName) - starts(bName) ||
+          inLatest(aSeries) - inLatest(bSeries) ||
+          aName.localeCompare(bName, "sv")
+        );
+      })
+      .slice(0, 6);
+  }, [cloud, query, latestIdx]);
 
-  function spotlight(series: CloudSeries[]) {
-    const keys = [...series]
-      .sort((a, b) => (lastVal(b) ?? 0) - (lastVal(a) ?? 0))
-      .slice(0, MAX_SELECTED)
-      .map((s) => `${s.supplier}|${s.delivery_area}`);
+  function spotlight(supplier: string, series: CloudSeries[]) {
+    const { keys, total } = spotlightSelection(series);
     setSelected(keys);
+    setSpotlightNote(total > keys.length ? { supplier, total } : null);
     setQuery("");
   }
 
@@ -78,31 +84,50 @@ export function HomeConstellation({ periods, initialKeys }: { periods: string[];
         />
         {matches.length > 0 && (
           <ul className="absolute z-30 mt-1 w-full card divide-y divide-[var(--line-soft)] overflow-hidden">
-            {matches.map(([supplier, series]) => (
-              <li key={supplier}>
-                <button
-                  type="button"
-                  onClick={() => spotlight(series)}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--bg-hover)] transition-colors"
-                >
-                  {supplier}{" "}
-                  <span className="text-xs text-[var(--text-dim)]">
-                    — {series.length} {series.length === 1 ? "avtal" : "avtal"}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {matches.map(([supplier, series]) => {
+              const latestCount = series.filter((s) => s.values[latestIdx] !== null).length;
+              const label =
+                latestCount === series.length
+                  ? `${latestCount} avtal (${periodLabel(periods[latestIdx])})`
+                  : `${latestCount} avtal (${periodLabel(periods[latestIdx])}) · ${series.length} totalt sedan ${periodLabel(periods[0])}`;
+              return (
+                <li key={supplier}>
+                  <button
+                    type="button"
+                    onClick={() => spotlight(supplier, series)}
+                    className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--bg-hover)] transition-colors"
+                  >
+                    {supplier} <span className="text-xs text-[var(--text-dim)]">— {label}</span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
+
+      <SelectionChips
+        selected={selected}
+        cloud={cloud}
+        onRemove={(key) => {
+          setSelected((cur) => cur.filter((k) => k !== key));
+          setSpotlightNote(null);
+        }}
+      />
+      {spotlightNote && selected.length > 0 && (
+        <SpotlightNote supplier={spotlightNote.supplier} total={spotlightNote.total} shown={selected.length} />
+      )}
 
       {cloud ? (
         <ConstellationCloud
           cloud={cloud}
           periods={periods}
           selected={selected}
-          onSelect={(key) => setSelected((cur) => (cur.length < MAX_SELECTED ? [...cur, key] : cur))}
-          maxSelected={MAX_SELECTED}
+          onSelect={(key) => {
+            setSelected((cur) => (cur.includes(key) || cur.length >= MAX_COMPARE ? cur : [...cur, key]));
+            setSpotlightNote(null);
+          }}
+          maxSelected={MAX_COMPARE}
         />
       ) : (
         <div

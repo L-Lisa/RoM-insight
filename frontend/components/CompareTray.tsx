@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getCompare, setCompare, subscribeCompare, toggleCompare } from "@/lib/compare";
+import { getCompare, setCompare, subscribeCompare, toggleCompare, MAX_COMPARE } from "@/lib/compare";
 
 /**
  * Jämförelsebrickan: fast panel nere till höger med valda avtal.
@@ -28,7 +28,7 @@ export function CompareTray() {
       role="region"
       aria-label="Valda avtal för jämförelse"
     >
-      <p className="mono-label mb-2">Jämförelsen · {keys.length} av 6</p>
+      <p className="mono-label mb-2">Jämförelsen · {keys.length} av {MAX_COMPARE}</p>
       <ul className="space-y-1 mb-3 max-h-40 overflow-y-auto">
         {keys.map((k) => {
           const [supplier, area] = k.split("|");

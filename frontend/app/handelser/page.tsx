@@ -69,6 +69,9 @@ export default async function EventsPage() {
   ]);
   const radarEvents = prevRadar ? diffRadar(prevRadarRows, latestRadarRows, prevOfficeRows, latestOfficeRows) : [];
   const latestStatsRows = allRows[allRows.length - 1] ?? [];
+  // Områdessidan finns bara för områden i senaste perioden — äldre händelser
+  // kan röra områden som lämnat statistiken; de länkas inte (annars 404).
+  const currentAreas = new Set(latestStatsRows.map((r) => r.delivery_area));
   const missing = latestRadar
     ? radarMissingSuppliers(latestStatsRows, latestRadarRows, suppliers, variants)
     : [];
@@ -210,7 +213,16 @@ export default async function EventsPage() {
                       <Link href={`/leverantorer/${slugify(e.supplier)}`} className="hover:text-[var(--compare-1)] truncate">
                         {e.supplier}
                       </Link>
-                      <span className="text-[var(--text-dim)] truncate">— {e.delivery_area}</span>
+                      <span className="text-[var(--text-dim)] truncate">
+                        —{" "}
+                        {currentAreas.has(e.delivery_area) ? (
+                          <Link href={`/leveransomraden/${encodeURIComponent(e.delivery_area)}`} className="hover:text-[var(--compare-1)]">
+                            {e.delivery_area}
+                          </Link>
+                        ) : (
+                          e.delivery_area
+                        )}
+                      </span>
                       <span className="ml-auto text-[var(--text-dim)] text-xs shrink-0">{e.detail}</span>
                     </div>
                   );

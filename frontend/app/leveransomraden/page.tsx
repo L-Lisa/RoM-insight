@@ -53,7 +53,7 @@ export default async function AreasPage() {
         <div className="mt-2"><DataStamp period={latest} note="snitt per område är RoM Insights beräkning (oviktat medel av avtalens viktade resultat)" /></div>
       </div>
 
-      <KommunSearch municipalities={municipalities} />
+      <KommunSearch municipalities={municipalities} areas={list.map((a) => a.name)} />
 
       <div className="card overflow-hidden">
         <table className="w-full text-sm">
