@@ -83,12 +83,12 @@ export function ShowSource({ row, weights }: { row: RomResult; weights: PeriodWe
             <SourceBreakdown row={row} weights={weights} />
 
             <p className="text-xs text-[var(--text-dim)] leading-relaxed">
-              Rådata: Arbetsförmedlingens resultatuppföljning, {periodLabel(row.dataset_date)} —{" "}
+              Rådata: Arbetsförmedlingens resultatuppföljning, {periodLabel(row.dataset_date)}.{" "}
               <a href={AF_SOURCE_URL} className="link" rel="noopener noreferrer" target="_blank">
-                hämta filen själv
+                Hämta filen själv
               </a>
               . RR1 = första godkända resultatet (arbete eller studier), RR2 = godkänd uppföljning. Formeln är
-              verifierad mot samtliga 7&nbsp;084 publicerade värden —{" "}
+              verifierad mot samtliga 7&nbsp;084 publicerade värden, se{" "}
               <Link href="/metod" className="link">metodsidan</Link>. Hittar du ett fel?{" "}
               <Link href="/metod#hitta-felet" className="link">Hitta felet-garantin</Link>.
             </p>

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatScore, isRankable, slugify } from "@/lib/format";
 import { CompareButton } from "@/components/CompareButton";
+import { AF_RATING_MIN_PARTICIPANTS, AF_RATING_MIN_MONTHS } from "@/lib/afRules";
 
 /**
  * C3: hela marknaden, sorterbar. Klientkomponent — datan kommer från servern.
@@ -130,7 +131,7 @@ export function MarketTable({ rows, periodText }: { rows: MarketRow[]; periodTex
       </div>
       <p className="text-xs text-[var(--text-dim)]">
         {sorted.length} avtal visas{periodText ? ` (${periodText})` : ""}. Vid sortering på viktat resultat hamnar avtal utan betyg sist —
-        under AF:s betygsvillkor (minst 18 deltagare, 12 månaders verksamhet) är måttet inte jämförbart.
+        under AF:s betygsvillkor (minst {AF_RATING_MIN_PARTICIPANTS} deltagare, {AF_RATING_MIN_MONTHS} månaders verksamhet) är måttet inte jämförbart.
       </p>
     </div>
   );

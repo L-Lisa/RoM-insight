@@ -1,31 +1,35 @@
 import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 import { DataStamp } from "@/components/DataStamp";
-import { getLatestPeriod } from "@/lib/queries";
+import { getLatestPeriod, getPeriodRows } from "@/lib/queries";
+import { periodLabel } from "@/lib/format";
+import { AF_RATING_MIN_MONTHS, AF_RATING_MIN_PARTICIPANTS } from "@/lib/afRules";
 
 export const revalidate = 3600;
 
 export const metadata = {
   title: "Metod & källor",
   description:
-    "Hur RoM Insight hämtar, kontrollerar och visar Arbetsförmedlingens data för Rusta och matcha — inklusive Hitta felet-garantin och rättelseloggen.",
+    "Hur RoM Insight hämtar, kontrollerar och visar Arbetsförmedlingens data för Rusta och matcha, inklusive Hitta felet-garantin och rättelseloggen.",
 };
 
 export default async function MethodPage() {
   const latest = await getLatestPeriod();
+  const rows = latest ? await getPeriodRows(latest) : [];
+  const unratedPct = rows.length ? Math.round((rows.filter((r) => r.rating === null).length / rows.length) * 100) : null;
 
   // schema.org Dataset — gör datan hittbar i Google Dataset Search (seo-ai-synlighet.md §2)
   const datasetJsonLd = {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    name: "Rusta och matcha — betyg och viktade resultat per leverantör och leveransområde",
+    name: "Rusta och matcha: betyg och viktade resultat per leverantör och leveransområde",
     description:
       "Arbetsförmedlingens öppna statistik för Rusta och matcha, samlad per avtal (leverantör × leveransområde): betyg 1–4 från januari 2025, viktade resultatmått med nivådata (A/B/C) från mars 2025, uppdaterad varannan månad. Oförändrade värden ur källfilerna, med spårbar metod.",
     url: `${SITE_URL}/metod`,
     isBasedOn: "https://arbetsformedlingen.se/for-leverantorer/arbetsmarknadstjanster/rusta-och-matcha",
     creator: { "@type": "Organization", name: "RoM Insight" },
     spatialCoverage: "Sverige",
-    temporalCoverage: "2025-01/..",
+    temporalCoverage: `2025-01/${latest ? latest.slice(0, 7) : ".."}`,
     inLanguage: "sv",
   };
 
@@ -54,7 +58,7 @@ export default async function MethodPage() {
           >
             AF:s leverantörssida
           </a>
-          . Vi hittar inte på, härleder inte och &quot;förbättrar&quot; inte värden — det som visas är det AF publicerat,
+          . Vi hittar inte på, härleder inte och &quot;förbättrar&quot; inte värden. Det som visas är det AF publicerat,
           med källfil och period angiven.
         </p>
       </Section>
@@ -63,29 +67,30 @@ export default async function MethodPage() {
         <dl className="space-y-4 text-sm">
           <Term t="Betyg (1–4)">
             AF:s omdöme om hur väl leverantören stödjer deltagare till arbete eller studier, jämfört med andra och
-            med hänsyn till deltagarnas avstånd till arbetsmarknaden. Kräver minst 18 deltagare och 12 månaders
-            verksamhet — därför visar ungefär var fjärde avtal &quot;ej betygsatt ännu&quot;. Det är ett tillstånd, inte ett
-            underbetyg.
+            med hänsyn till deltagarnas avstånd till arbetsmarknaden. Kräver minst {AF_RATING_MIN_PARTICIPANTS} deltagare
+            och {AF_RATING_MIN_MONTHS} månaders verksamhet.
+            {unratedPct !== null && latest ? ` Därför visar ${unratedPct} % av avtalen i ${periodLabel(latest)} "ej betygsatt ännu".` : ""} Det
+            är ett tillstånd, inte ett underbetyg.
           </Term>
           <Term t="Viktat resultatmått">
             Andel deltagare (påbörjade 11–22 månader före mätningen) med godkänt resultat till arbete eller studier,
-            viktat efter deltagarnas nivå A/B/C. Viktningen justerar för individernas avstånd till arbetsmarknaden —{" "}
+            viktat efter deltagarnas nivå A/B/C. Viktningen justerar för individernas avstånd till arbetsmarknaden,{" "}
             <strong>inte</strong> för den lokala arbetsmarknaden. AF delar inte upp resultatet i arbete respektive
             studier, så det gör inte vi heller.
           </Term>
           <Term t="AF:s riskflagga">
             Kolumnen &quot;Riskerar hävning&quot; ur AF:s fil. AF publicerar den bara vissa perioder; när den saknas visar vi
-            &quot;ej publicerad&quot; — aldrig ett antaget värde.
+            &quot;ej publicerad&quot;, aldrig ett antaget värde.
           </Term>
           <Term t="Percentil (vår beräkning)">
             Avtalets viktade resultat rankat mot samtliga betygsatta avtal i samma period. Detta är RoM Insights
-            beräkning på AF:s siffror, inte ett AF-mått — därför märks den alltid som vår.
+            beräkning på AF:s siffror, inte ett AF-mått; därför märks den alltid som vår.
           </Term>
           <Term t="Varför rankas bara betygsatta avtal?">
             Viktat resultatmått delas med två gånger antalet deltagare. För avtal med en handfull deltagare ger det
-            extremvärden som ser imponerande eller katastrofala ut men bara är brus — i maj 2026 hade det
+            extremvärden som ser imponerande eller katastrofala ut men bara är brus: i maj 2026 hade det
             &quot;bästa&quot; avtalet utan betyg måttet 1,15 på 2 deltagare. AF sätter av samma skäl inget betyg under
-            18 deltagare och 12 månaders verksamhet, och rankar aldrig dessa avtal. Därför gäller på RoM Insight:
+            {AF_RATING_MIN_PARTICIPANTS} deltagare och {AF_RATING_MIN_MONTHS} månaders verksamhet, och rankar aldrig dessa avtal. Därför gäller på RoM Insight:
             topplistor, lyft/tapp, percentiler och områdessnitt räknas enbart på betygsatta avtal. Avtal utan betyg
             visas med alla sina siffror i tabellerna — de rankas bara inte.
           </Term>
@@ -106,7 +111,7 @@ export default async function MethodPage() {
             — de leverantörer och kontor arbetssökande kan välja mellan just nu. Statistikfilerna släpar
             upp till två månader; söktjänsten ändras när AF agerar, och Radarn gör skillnaden synlig. Att en
             leverantör försvinner ur söktjänsten kan bero på avtal som löpt ut, eget utträde, namnbyte eller
-            hävning — AF publicerar inte orsaken och vi påstår ingen. Namnbyten matchas mot vår
+            hävning; AF publicerar inte orsaken och vi påstår ingen. Namnbyten matchas mot vår
             namnvariantlista innan något visas som försvunnet. Varje kontroll anges med datum.
           </Term>
         </dl>
@@ -132,7 +137,7 @@ export default async function MethodPage() {
 
       <Section title="Hitta felet-garantin" id="hitta-felet">
         <blockquote className="card p-5 text-sm leading-relaxed">
-          Vi lägger stor möda på att varje siffra ska stämma med Arbetsförmedlingens källdata — automatiska
+          Vi lägger stor möda på att varje siffra ska stämma med Arbetsförmedlingens källdata: automatiska
           kontroller, manuell granskning före publicering och öppen rättelselogg. Hittar du ändå ett fel har du
           gjort oss en tjänst: vi rättar inom 48 timmar, krediterar dig om du vill, och bjuder på biobiljetter.
         </blockquote>
@@ -140,8 +145,8 @@ export default async function MethodPage() {
           Rapportera fel:{" "}
           <a className="link" href="mailto:hej@rominsight.se?subject=Felrapport%20RoM%20Insight">
             hej@rominsight.se
-          </a>{" "}
-          — ange sida, leverantör och period så går det fort.
+          </a>
+          . Ange sida, leverantör och period så går det fort.
         </p>
       </Section>
 

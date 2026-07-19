@@ -1,5 +1,6 @@
 import { RomResult } from "@/lib/types";
 import { formatScore, periodLabel } from "@/lib/format";
+import { AF_TERMINATION_THRESHOLD_LABEL } from "@/lib/afRules";
 
 /**
  * T2 (v1): deterministiska insiktstexter.
@@ -59,7 +60,7 @@ export function contractInsight(series: RomResult[]): ContractInsight {
   const ratingLow = last.rating === 1 || last.rating === null;
   if (last.weighted_score < 0.2 && ratingLow) {
     parts.push(
-      `Avtalet uppfyller två av Arbetsförmedlingens hävningskriterier (betyg ${last.rating ?? "saknas"}, viktat resultat under 0,2) — informativ beräkning, inte myndighetens bedömning.`,
+      `Avtalet uppfyller två av Arbetsförmedlingens hävningskriterier (betyg ${last.rating ?? "saknas"}, viktat resultat under ${AF_TERMINATION_THRESHOLD_LABEL}). Informativ beräkning, inte myndighetens bedömning.`,
     );
   }
 

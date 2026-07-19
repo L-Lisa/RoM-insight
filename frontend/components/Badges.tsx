@@ -1,6 +1,7 @@
 import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import { formatScore } from "@/lib/format";
+import { AF_TERMINATION_THRESHOLD } from "@/lib/afRules";
 
 /**
  * Färgsemantik (kravprofil §4e):
@@ -51,8 +52,8 @@ export function ScoreBar({ score }: { score: number | null }) {
     return <span className="text-[var(--text-faint)]">–</span>;
   }
   const w = Math.min(score / 0.7, 1) * 100;
-  const threshold = (0.2 / 0.7) * 100;
-  const belowThreshold = score < 0.2;
+  const threshold = (AF_TERMINATION_THRESHOLD / 0.7) * 100;
+  const belowThreshold = score < AF_TERMINATION_THRESHOLD;
   return (
     <span className="inline-flex items-center gap-2">
       <span

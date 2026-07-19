@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { DataStamp } from "@/components/DataStamp";
-import { getLatestPeriod } from "@/lib/queries";
+import { periodLabel } from "@/lib/format";
+import { getLatestPeriod, getPeriodRows } from "@/lib/queries";
+import {
+  AF_RATING_MIN_MONTHS,
+  AF_RATING_MIN_PARTICIPANTS,
+  AF_TERMINATION_MIN_MONTHS,
+  AF_TERMINATION_THRESHOLD_LABEL,
+} from "@/lib/afRules";
 
 export const revalidate = 3600;
 
@@ -15,7 +22,8 @@ export const metadata = {
  * formuleringar som redan är verifierade mot AF:s betygsmodell — inga nya påståenden.
  */
 
-const FAQ: { q: string; a: string; links?: { href: string; label: string }[] }[] = [
+function buildFaq(unratedShareText: string): { q: string; a: string; links?: { href: string; label: string }[] }[] {
+  return [
   {
     q: "Vad betyder betygen 1–4?",
     a: "Betyget är Arbetsförmedlingens omdöme om hur väl leverantören har lyckats stödja sina deltagare till arbete eller studier, jämfört med andra leverantörer och med hänsyn till deltagarnas avstånd till arbetsmarknaden. Skalan är 1–4 där 4 är högst. Betyget sätts per avtal, alltså per leverantör och leveransområde — samma leverantör kan ha betyg 4 i ett område och betyg 2 i ett annat.",
@@ -23,11 +31,11 @@ const FAQ: { q: string; a: string; links?: { href: string; label: string }[] }[]
   },
   {
     q: "Varför har min leverantör inget betyg?",
-    a: "”Ej betygsatt ännu” betyder att avtalet inte nått Arbetsförmedlingens tröskel: minst 18 deltagare och 12 månaders verksamhet. Det är ett tillstånd, inte ett underbetyg — ungefär vart fjärde avtal ligger där, ofta för att det är nytt eller litet.",
+    a: `”Ej betygsatt ännu” betyder att avtalet inte nått Arbetsförmedlingens tröskel: minst ${AF_RATING_MIN_PARTICIPANTS} deltagare och ${AF_RATING_MIN_MONTHS} månaders verksamhet. Det är ett tillstånd, inte ett underbetyg.${unratedShareText} Oftast beror det på att avtalet är nytt eller litet.`,
   },
   {
     q: "Är betyg 4 hos en leverantör jämförbart med betyg 4 hos en annan?",
-    a: "Delvis. Betyget tar hänsyn till deltagarnas avstånd till arbetsmarknaden (nivå A, B och C) — men inte till hur den lokala arbetsmarknaden ser ut. Ett resultat i ett område är därför inte automatiskt jämförbart med samma siffra i ett annat. Rättvisast är att jämföra avtal inom samma leveransområde, eller mot områdets snitt på leverantörens profilsida.",
+    a: "Delvis. Betyget tar hänsyn till deltagarnas avstånd till arbetsmarknaden (nivå A, B och C), men inte till hur den lokala arbetsmarknaden ser ut. Ett resultat i ett område är därför inte automatiskt jämförbart med samma siffra i ett annat. Rättvisast är att jämföra avtal inom samma leveransområde, eller mot områdets snitt på leverantörens profilsida.",
     links: [{ href: "/leveransomraden", label: "Jämför inom ditt område" }],
   },
   {
@@ -37,13 +45,19 @@ const FAQ: { q: string; a: string; links?: { href: string; label: string }[] }[]
   },
   {
     q: "Vad är riskflaggan och riskzonen?",
-    a: "Riskflaggan är Arbetsförmedlingens egen markering ”riskerar hävning” ur deras fil. Riskzonen på RoM Insight är vår sammanställning av avtal som möter AF:s publika hävningskriterier: betyg 1 eller saknas, resultatmått under 0,2, i två uppföljningar i rad, för avtal som varit aktiva minst 22 månader. Att ett avtal ligger i riskzonen betyder inte att det kommer hävas — bara att det möter de publika kriterierna just nu.",
+    a: `Riskflaggan är Arbetsförmedlingens egen markering ”riskerar hävning” ur deras fil. Riskzonen på RoM Insight är vår sammanställning av avtal som möter AF:s publika hävningskriterier: betyg 1 eller saknas, resultatmått under ${AF_TERMINATION_THRESHOLD_LABEL}, i två uppföljningar i rad, för avtal som varit aktiva minst ${AF_TERMINATION_MIN_MONTHS} månader. Att ett avtal ligger i riskzonen betyder inte att det kommer hävas, bara att det möter de publika kriterierna just nu.`,
     links: [{ href: "/riskzon", label: "Se riskzonen" }],
   },
-];
+  ];
+}
 
 export default async function GuideRatingsPage() {
   const latest = await getLatestPeriod();
+  const rows = latest ? await getPeriodRows(latest) : [];
+  const unratedPct = rows.length ? Math.round((rows.filter((r) => r.rating === null).length / rows.length) * 100) : null;
+  const FAQ = buildFaq(
+    unratedPct !== null && latest ? ` I ${periodLabel(latest)} gäller det ${unratedPct} % av avtalen.` : "",
+  );
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -61,7 +75,7 @@ export default async function GuideRatingsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Vad betyder betygen i rusta och matcha?</h1>
         <p className="text-sm text-[var(--text-dim)] mt-1 max-w-2xl">
-          Arbetsförmedlingens betygsmodell förklarad på ren svenska — vad siffrorna mäter, vad de inte mäter,
+          Arbetsförmedlingens betygsmodell förklarad på ren svenska: vad siffrorna mäter, vad de inte mäter,
           och hur du jämför rättvist.
         </p>
         <div className="mt-2"><DataStamp period={latest} /></div>
@@ -88,7 +102,7 @@ export default async function GuideRatingsPage() {
       </dl>
 
       <p className="text-sm">
-        Djupare detaljer — formeln, källfilerna, kvalitetskontrollerna och Hitta felet-garantin — finns på{" "}
+        Djupare detaljer (formeln, källfilerna, kvalitetskontrollerna och Hitta felet-garantin) finns på{" "}
         <Link href="/metod" className="link">metodsidan</Link>.
       </p>
     </div>

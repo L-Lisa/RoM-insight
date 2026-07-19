@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getIssue, Mover } from "@/lib/newsletter";
 import { formatScore, periodLabel, slugify } from "@/lib/format";
+import { AF_TERMINATION_MIN_MONTHS, AF_TERMINATION_THRESHOLD_LABEL } from "@/lib/afRules";
 
 export const revalidate = 3600;
 
@@ -62,8 +63,8 @@ export default async function IssuePage({ params }: Props) {
       <Section title="3. Riskzonen">
         <p>
           {issue.riskCurr} avtal uppfyller nu riskkriterierna som kan läsas ur filen (betyg 1 eller saknas samt
-          viktat resultat under 0,2) — {issue.riskPrev > issue.riskCurr ? "ner" : issue.riskPrev < issue.riskCurr ? "upp" : "oförändrat"} från{" "}
-          {issue.riskPrev} i {periodLabel(issue.prevPeriod)}. AF:s fullständiga prövning kräver därtill 22 månaders
+          viktat resultat under {AF_TERMINATION_THRESHOLD_LABEL}) — {issue.riskPrev > issue.riskCurr ? "ner" : issue.riskPrev < issue.riskCurr ? "upp" : "oförändrat"} från{" "}
+          {issue.riskPrev} i {periodLabel(issue.prevPeriod)}. AF:s fullständiga prövning kräver därtill {AF_TERMINATION_MIN_MONTHS} månaders
           aktivt avtal och brister vid två uppföljningar i rad.{" "}
           <Link href="/riskzon" className="link">Hela riskzonen →</Link>
         </p>

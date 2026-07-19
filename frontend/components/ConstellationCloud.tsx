@@ -5,20 +5,21 @@ import { CloudSeries } from "@/lib/types";
 import { formatScore, periodShort } from "@/lib/format";
 import { selectionColor } from "@/components/SelectionChips";
 import { contractKey } from "@/lib/compare";
+import { AF_TERMINATION_THRESHOLD, AF_TERMINATION_THRESHOLD_LABEL } from "@/lib/afRules";
 
 /**
  * Konstellationsgrafen — sajtens signatur ("lyfta en stjärna ur natthimlen").
  * Hela marknaden som lågmält moln; valda avtal lyfts i jämförelsefärgerna.
- * Custom SVG (kravprofil §4g — Recharts klarar inte interaktionen).
+ * Custom SVG (kravprofil §4g: Recharts klarar inte interaktionen).
  * Ärlighetsregler: molnet är kontext (får vara lågkontrast, §4b), men valda
  * linjer har synliga punktmarkörer på de faktiska mätningarna (§4d) och
- * segment dras aldrig över luckor — saknad period är ett hål, inte en linje.
+ * segment dras aldrig över luckor; saknad period är ett hål, inte en linje.
  */
 
 const W = 960;
 const H = 420;
 const PAD = { top: 16, right: 16, bottom: 28, left: 44 };
-const Y_MAX = 0.7; // enstaka småavtal ligger över — kapas visuellt, anges i foten
+const Y_MAX = 0.7; // enstaka småavtal ligger över; kapas visuellt, anges i foten
 
 export function ConstellationCloud({
   cloud,
@@ -111,7 +112,7 @@ export function ConstellationCloud({
             </text>
           </g>
         ))}
-        <line x1={PAD.left} x2={W - PAD.right} y1={y(0.2)} y2={y(0.2)} stroke="var(--risk)" strokeOpacity={0.35} />
+        <line x1={PAD.left} x2={W - PAD.right} y1={y(AF_TERMINATION_THRESHOLD)} y2={y(AF_TERMINATION_THRESHOLD)} stroke="var(--risk)" strokeOpacity={0.35} />
         {periods.map((p, i) => (
           <text key={p} x={x(i)} y={H - 8} textAnchor="middle" fontSize="11" fill="var(--text-dim)">
             {periodShort(p)}
@@ -187,8 +188,8 @@ export function ConstellationCloud({
       )}
 
       <p className="data-stamp mt-2">
-        Varje linje är ett avtal (leverantör × område), {cloud.length} totalt. Orange linje = AF:s 0,2-tröskel.
-        Y-axeln är kapad vid 0,7 — enstaka mycket små avtal ligger över (syns i tabellerna). Punkterna på valda
+        Varje linje är ett avtal (leverantör × område), {cloud.length} totalt. Orange linje = AF:s {AF_TERMINATION_THRESHOLD_LABEL}-tröskel.
+        Y-axeln är kapad vid 0,7; enstaka mycket små avtal ligger över (syns i tabellerna). Punkterna på valda
         linjer är AF:s faktiska mätningar; luckor betyder att avtalet saknades den perioden.
       </p>
     </div>
