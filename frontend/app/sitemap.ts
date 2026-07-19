@@ -3,7 +3,8 @@ import { getLatestPeriod, getPeriodRows, getSuppliers } from "@/lib/queries";
 
 export const revalidate = 3600;
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ro-m-insight.vercel.app";
+import { SITE_URL } from "@/lib/site";
+const BASE = SITE_URL;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [suppliers, latest] = await Promise.all([getSuppliers(), getLatestPeriod()]);

@@ -1,5 +1,5 @@
-import { supabase } from "@/lib/supabase";
-import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnapshotRow, PeriodWeights, RadarEvent, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "@/lib/types";
+import { supabase } from "./supabase";
+import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnapshotRow, PeriodWeights, RadarEvent, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "./types";
 
 /**
  * Dataåtkomstlager. Regler:

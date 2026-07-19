@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://ro-m-insight.vercel.app";
+import { SITE_URL } from "@/lib/site";
+const BASE = SITE_URL;
 
 /**
  * AI-crawlers är uttryckligen välkomna (GEO, seo-ai-synlighet.md §4):

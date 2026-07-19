@@ -3,7 +3,8 @@ import { formatScore, periodLabel } from "@/lib/format";
 
 export const revalidate = 3600;
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://rominsight.vercel.app";
+import { SITE_URL } from "@/lib/site";
+const BASE = SITE_URL;
 
 function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
