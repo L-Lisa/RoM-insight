@@ -1,0 +1,429 @@
+[
+ {
+  "period": "2026-05-01",
+  "prevPeriod": "2026-03-01",
+  "slug": "2026-05",
+  "contractsPrev": 800,
+  "contractsCurr": 756,
+  "entered": 13,
+  "left": 57,
+  "ratingChanges": 256,
+  "riskPrev": 136,
+  "riskCurr": 114,
+  "lifts": [
+   {
+    "supplier": "Axelera Sverige AB",
+    "delivery_area": "Stockholm Nord",
+    "from": 0.426,
+    "to": 0.583,
+    "delta": 0.15699999999999997
+   },
+   {
+    "supplier": "Jobcenter in Sweden AB",
+    "delivery_area": "Kronoberg öst",
+    "from": 0.188,
+    "to": 0.315,
+    "delta": 0.127
+   },
+   {
+    "supplier": "Scandinavian Jobhunter Match AB",
+    "delivery_area": "Sollefteå",
+    "from": 0.38,
+    "to": 0.501,
+    "delta": 0.121
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "Can Etablering KB",
+    "delivery_area": "Västerås",
+    "from": 0.263,
+    "to": 0.1,
+    "delta": -0.163
+   },
+   {
+    "supplier": "HelloLilly AB",
+    "delivery_area": "Fagersta",
+    "from": 0.284,
+    "to": 0.177,
+    "delta": -0.10699999999999998
+   },
+   {
+    "supplier": "A-Karriär Sweden AB",
+    "delivery_area": "Nyköping",
+    "from": 0.34,
+    "to": 0.239,
+    "delta": -0.10100000000000003
+   }
+  ],
+  "ratedCount": 637,
+  "lowestRatingCount": 79,
+  "lowestRatingShare": 12
+ },
+ {
+  "period": "2026-03-01",
+  "prevPeriod": "2026-01-01",
+  "slug": "2026-03",
+  "contractsPrev": 925,
+  "contractsCurr": 800,
+  "entered": 15,
+  "left": 140,
+  "ratingChanges": 293,
+  "riskPrev": 213,
+  "riskCurr": 136,
+  "lifts": [
+   {
+    "supplier": "Asuria People Services ( Sweden ) AB",
+    "delivery_area": "Ljusdal",
+    "from": 0.3,
+    "to": 0.445,
+    "delta": 0.14500000000000002
+   },
+   {
+    "supplier": "Arbetsklivet AB",
+    "delivery_area": "Borås",
+    "from": 0.267,
+    "to": 0.407,
+    "delta": 0.13999999999999996
+   },
+   {
+    "supplier": "Axelera Sverige AB",
+    "delivery_area": "Stockholm Nord",
+    "from": 0.311,
+    "to": 0.426,
+    "delta": 0.11499999999999999
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "MiJob Bemanning & Rekrytering i Sverige AB",
+    "delivery_area": "Västerås",
+    "from": 0.472,
+    "to": 0.332,
+    "delta": -0.13999999999999996
+   },
+   {
+    "supplier": "Worktasker AB",
+    "delivery_area": "Gävle",
+    "from": 0.348,
+    "to": 0.217,
+    "delta": -0.13099999999999998
+   },
+   {
+    "supplier": "HelloLilly AB",
+    "delivery_area": "Helsingborg",
+    "from": 0.357,
+    "to": 0.227,
+    "delta": -0.12999999999999998
+   }
+  ],
+  "ratedCount": 682,
+  "lowestRatingCount": 90,
+  "lowestRatingShare": 13
+ },
+ {
+  "period": "2026-01-01",
+  "prevPeriod": "2025-11-01",
+  "slug": "2026-01",
+  "contractsPrev": 916,
+  "contractsCurr": 925,
+  "entered": 9,
+  "left": 0,
+  "ratingChanges": 307,
+  "riskPrev": 204,
+  "riskCurr": 213,
+  "lifts": [
+   {
+    "supplier": "Arbetslivsresurs Ar AB",
+    "delivery_area": "Hudiksvall",
+    "from": 0.1,
+    "to": 0.214,
+    "delta": 0.11399999999999999
+   },
+   {
+    "supplier": "Arena Matchning AB",
+    "delivery_area": "Kronoberg öst",
+    "from": 0.134,
+    "to": 0.247,
+    "delta": 0.11299999999999999
+   },
+   {
+    "supplier": "Transeo AB",
+    "delivery_area": "Malmö",
+    "from": 0.347,
+    "to": 0.459,
+    "delta": 0.11200000000000004
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "Jobbstep in Sweden AB",
+    "delivery_area": "Västerås",
+    "from": 0.372,
+    "to": 0.201,
+    "delta": -0.17099999999999999
+   },
+   {
+    "supplier": "Nordisk kompetens AB",
+    "delivery_area": "Örebro",
+    "from": 0.31,
+    "to": 0.182,
+    "delta": -0.128
+   },
+   {
+    "supplier": "ArbetsCentralen Sverige AB",
+    "delivery_area": "Kristianstad",
+    "from": 0.251,
+    "to": 0.14,
+    "delta": -0.11099999999999999
+   }
+  ],
+  "ratedCount": 705,
+  "lowestRatingCount": 97,
+  "lowestRatingShare": 14
+ },
+ {
+  "period": "2025-11-01",
+  "prevPeriod": "2025-09-01",
+  "slug": "2025-11",
+  "contractsPrev": 905,
+  "contractsCurr": 916,
+  "entered": 11,
+  "left": 0,
+  "ratingChanges": 302,
+  "riskPrev": 196,
+  "riskCurr": 204,
+  "lifts": [
+   {
+    "supplier": "A-Karriär Sweden AB",
+    "delivery_area": "Halmstad",
+    "from": 0.316,
+    "to": 0.433,
+    "delta": 0.11699999999999999
+   },
+   {
+    "supplier": "Curonova Consulting AB",
+    "delivery_area": "Ånge",
+    "from": 0.269,
+    "to": 0.373,
+    "delta": 0.10399999999999998
+   },
+   {
+    "supplier": "Jobcenter in Sweden AB",
+    "delivery_area": "Värnamo",
+    "from": 0.235,
+    "to": 0.338,
+    "delta": 0.10300000000000004
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "Euniq'em AB",
+    "delivery_area": "Skellefteå",
+    "from": 0.506,
+    "to": 0.337,
+    "delta": -0.16899999999999998
+   },
+   {
+    "supplier": "Urkraft ASF AB",
+    "delivery_area": "Skellefteå",
+    "from": 0.281,
+    "to": 0.114,
+    "delta": -0.16700000000000004
+   },
+   {
+    "supplier": "Studentconsulting Sweden AB (Publ)",
+    "delivery_area": "Norrköping",
+    "from": 0.446,
+    "to": 0.279,
+    "delta": -0.16699999999999998
+   }
+  ],
+  "ratedCount": 712,
+  "lowestRatingCount": 95,
+  "lowestRatingShare": 13
+ },
+ {
+  "period": "2025-09-01",
+  "prevPeriod": "2025-07-01",
+  "slug": "2025-09",
+  "contractsPrev": 891,
+  "contractsCurr": 905,
+  "entered": 14,
+  "left": 0,
+  "ratingChanges": 260,
+  "riskPrev": 169,
+  "riskCurr": 196,
+  "lifts": [
+   {
+    "supplier": "Arbetsklivet AB",
+    "delivery_area": "Örebro",
+    "from": 0.189,
+    "to": 0.338,
+    "delta": 0.14900000000000002
+   },
+   {
+    "supplier": "Accepta Vi Almira AB",
+    "delivery_area": "Eskilstuna",
+    "from": 0.181,
+    "to": 0.302,
+    "delta": 0.121
+   },
+   {
+    "supplier": "Kollega - matchning, rekrytering och bemanning A",
+    "delivery_area": "Örebro",
+    "from": 0.319,
+    "to": 0.431,
+    "delta": 0.11199999999999999
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "Miljonbemanning AB",
+    "delivery_area": "Kristianstad",
+    "from": 0.415,
+    "to": 0.306,
+    "delta": -0.10899999999999999
+   },
+   {
+    "supplier": "Arbetslivsresurs Ar AB",
+    "delivery_area": "Östersund",
+    "from": 0.322,
+    "to": 0.217,
+    "delta": -0.10500000000000001
+   },
+   {
+    "supplier": "Jobcenter in Sweden AB",
+    "delivery_area": "Helsingborg",
+    "from": 0.351,
+    "to": 0.248,
+    "delta": -0.10299999999999998
+   }
+  ],
+  "ratedCount": 730,
+  "lowestRatingCount": 107,
+  "lowestRatingShare": 15
+ },
+ {
+  "period": "2025-07-01",
+  "prevPeriod": "2025-05-01",
+  "slug": "2025-07",
+  "contractsPrev": 958,
+  "contractsCurr": 891,
+  "entered": 27,
+  "left": 94,
+  "ratingChanges": 285,
+  "riskPrev": 189,
+  "riskCurr": 169,
+  "lifts": [
+   {
+    "supplier": "Arena Workforce AB",
+    "delivery_area": "Göteborg Mitt",
+    "from": 0.143,
+    "to": 0.246,
+    "delta": 0.10300000000000001
+   },
+   {
+    "supplier": "Academicum Utbildning & Bemanning AB",
+    "delivery_area": "Umeå",
+    "from": 0.131,
+    "to": 0.229,
+    "delta": 0.098
+   },
+   {
+    "supplier": "Arbetslivsresurs Ar AB",
+    "delivery_area": "Oskarshamn",
+    "from": 0.193,
+    "to": 0.283,
+    "delta": 0.08999999999999997
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "Utbildning i Norrbotten AB",
+    "delivery_area": "Kiruna",
+    "from": 0.264,
+    "to": 0.139,
+    "delta": -0.125
+   },
+   {
+    "supplier": "AB Ability Coaching",
+    "delivery_area": "Kronoberg väst",
+    "from": 0.277,
+    "to": 0.182,
+    "delta": -0.09500000000000003
+   },
+   {
+    "supplier": "Nordisk kompetens AB",
+    "delivery_area": "Örebro",
+    "from": 0.272,
+    "to": 0.181,
+    "delta": -0.09100000000000003
+   }
+  ],
+  "ratedCount": 742,
+  "lowestRatingCount": 102,
+  "lowestRatingShare": 14
+ },
+ {
+  "period": "2025-05-01",
+  "prevPeriod": "2025-03-01",
+  "slug": "2025-05",
+  "contractsPrev": 933,
+  "contractsCurr": 958,
+  "entered": 25,
+  "left": 0,
+  "ratingChanges": 272,
+  "riskPrev": 158,
+  "riskCurr": 189,
+  "lifts": [
+   {
+    "supplier": "Coach, Ulrika Holmgren AB",
+    "delivery_area": "Karlstad",
+    "from": 0.132,
+    "to": 0.236,
+    "delta": 0.10399999999999998
+   },
+   {
+    "supplier": "Arbetslivsresurs Ar AB",
+    "delivery_area": "Piteå",
+    "from": 0.122,
+    "to": 0.222,
+    "delta": 0.1
+   },
+   {
+    "supplier": "Jobbstep in Sweden AB",
+    "delivery_area": "Västerås",
+    "from": 0.347,
+    "to": 0.445,
+    "delta": 0.09800000000000003
+   }
+  ],
+  "drops": [
+   {
+    "supplier": "Studentconsulting Sweden AB (Publ)",
+    "delivery_area": "Linköping",
+    "from": 0.39,
+    "to": 0.26,
+    "delta": -0.13
+   },
+   {
+    "supplier": "ETU Match AB",
+    "delivery_area": "Halmstad",
+    "from": 0.232,
+    "to": 0.116,
+    "delta": -0.116
+   },
+   {
+    "supplier": "Performiq AB",
+    "delivery_area": "Örebro",
+    "from": 0.254,
+    "to": 0.168,
+    "delta": -0.086
+   }
+  ],
+  "ratedCount": 816,
+  "lowestRatingCount": 115,
+  "lowestRatingShare": 14
+ }
+]

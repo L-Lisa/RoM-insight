@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SITE_URL } from "@/lib/site";
 import { DataStamp } from "@/components/DataStamp";
 import { getLatestPeriod } from "@/lib/queries";
 
@@ -20,7 +21,7 @@ export default async function MethodPage() {
     name: "Rusta och matcha — betyg och viktade resultat per leverantör och leveransområde",
     description:
       "Arbetsförmedlingens öppna statistik för Rusta och matcha, samlad per avtal (leverantör × leveransområde): betyg 1–4 från januari 2025, viktade resultatmått med nivådata (A/B/C) från mars 2025, uppdaterad varannan månad. Oförändrade värden ur källfilerna, med spårbar metod.",
-    url: "https://ro-m-insight.vercel.app/metod",
+    url: `${SITE_URL}/metod`,
     isBasedOn: "https://arbetsformedlingen.se/for-leverantorer/arbetsmarknadstjanster/rusta-och-matcha",
     creator: { "@type": "Organization", name: "RoM Insight" },
     spatialCoverage: "Sverige",

@@ -46,3 +46,7 @@ against AF's files — keep it that way. Run in order, abort on any failure:
    in the new file — AF revises retroactively; latest revision wins
    (standing policy, Lisa 2026-07-03).
 6. **RR separation**: never merge RR1 and RR2 into one column. results=RR1.
+7. **Freeze the newsletter**: after data goes live, run
+   `cd frontend && npx tsx scripts/freeze-issues.ts` and COMMIT the updated
+   data/newsletter-issues.json. Published issues are immutable — rule changes
+   never rewrite frozen issues; corrections go through the rättelselogg.

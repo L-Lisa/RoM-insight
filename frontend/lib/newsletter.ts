@@ -1,5 +1,5 @@
-import { RomResult } from "@/lib/types";
-import { diffPeriods, getPeriodRows, getPeriods } from "@/lib/queries";
+import { RomResult } from "./types";
+import { diffPeriods, getPeriodRows, getPeriods } from "./queries";
 
 /**
  * Marknadsbrevet som blogg: varje nummer byggs deterministiskt ur två perioders
@@ -95,8 +95,9 @@ export function buildIssue(prev: RomResult[], curr: RomResult[], prevPeriod: str
   };
 }
 
-/** Alla nummer, nyast först. */
-export async function getAllIssues(): Promise<Issue[]> {
+/** Beräknar alla nummer live ur DB:n — används ENDAST av frysskriptet
+ *  (scripts/freeze-issues.ts). Sajten och RSS läser ALLTID det frysta arkivet. */
+export async function computeAllIssuesLive(): Promise<Issue[]> {
   const periods = await getPeriods();
   const rows = await Promise.all(periods.map((p) => getPeriodRows(p)));
   const issues: Issue[] = [];
@@ -109,4 +110,19 @@ export async function getAllIssues(): Promise<Issue[]> {
 export async function getIssue(slug: string): Promise<Issue | null> {
   const issues = await getAllIssues();
   return issues.find((i) => i.slug === slug) ?? null;
+}
+
+/** Publicerade nummer = det frysta arkivet (data/newsletter-issues.json),
+ *  genererat av scripts/freeze-issues.ts vid varje AF-import och committat.
+ *  Regeländringar påverkar ALDRIG redan frysta nummer — rättelser sker
+ *  explicit via rättelseloggen på metodsidan, aldrig genom tyst omräkning.
+ *  Saknas arkivet är det ett byggfel, inte ett skäl att räkna live. */
+export async function getAllIssues(): Promise<Issue[]> {
+  const { readFile } = await import("fs/promises");
+  const path = await import("path");
+  const file = path.join(process.cwd(), "data", "newsletter-issues.json");
+  const raw = await readFile(file, "utf-8").catch(() => {
+    throw new Error("Fryst marknadsbrevsarkiv saknas (data/newsletter-issues.json) — kör scripts/freeze-issues.ts.");
+  });
+  return JSON.parse(raw) as Issue[];
 }
