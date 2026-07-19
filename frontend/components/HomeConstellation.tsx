@@ -6,6 +6,7 @@ import { CloudSeries } from "@/lib/types";
 import { getAllCloudSeries } from "@/lib/queries";
 import { ConstellationCloud } from "@/components/ConstellationCloud";
 import { SelectionChips, SpotlightNote, spotlightSelection } from "@/components/SelectionChips";
+import { Spinner } from "@/components/Spinner";
 import { MAX_COMPARE } from "@/lib/compare";
 import { periodLabel } from "@/lib/format";
 
@@ -131,11 +132,10 @@ export function HomeConstellation({ periods, initialKeys }: { periods: string[];
         />
       ) : (
         <div
-          className="w-full flex items-center justify-center text-sm text-[var(--text-faint)]"
+          className="w-full flex items-center justify-center"
           style={{ aspectRatio: "960 / 460" }}
-          aria-hidden
         >
-          Konstellationen laddar…
+          <Spinner label="Hämtar marknadsdata…" />
         </div>
       )}
 
