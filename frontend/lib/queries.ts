@@ -77,7 +77,9 @@ export async function getAreaRows(period: string, area: string): Promise<RomResu
     .select("*")
     .eq("dataset_date", period)
     .eq("delivery_area", area)
-    .order("weighted_score", { ascending: false });
+    // nullsFirst: false — Postgres lägger annars NULL FÖRST vid DESC, och ett
+    // betygsatt avtal utan publicerat viktat värde skulle hamna som rank 1.
+    .order("weighted_score", { ascending: false, nullsFirst: false });
   return (data ?? []) as RomResult[];
 }
 
@@ -353,8 +355,10 @@ export function diffRadar(
       });
       continue;
     }
-    if (p.offices_count !== c.offices_count) {
-      const change = officeChangeDetail(String(id), prevOffices, currOffices);
+    // Kontorsdetaljen räknas alltid: även vid oförändrat ANTAL kan kontor ha
+    // flyttat (Kiruna stänger, Umeå öppnar = 3 → 3) — det ska också synas.
+    const change = officeChangeDetail(String(id), prevOffices, currOffices);
+    if (p.offices_count !== c.offices_count || change !== null) {
       events.push({
         type: "radar_offices", supplier_name: c.supplier_name, supplier_id: c.supplier_id,
         detail: `${p.offices_count} → ${c.offices_count} kontor${change ? ` (${change})` : ""}`,
