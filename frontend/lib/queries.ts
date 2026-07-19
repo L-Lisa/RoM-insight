@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, PeriodWeights, RadarEvent, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "@/lib/types";
+import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnapshotRow, PeriodWeights, RadarEvent, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "@/lib/types";
 
 /**
  * Dataåtkomstlager. Regler:
@@ -259,15 +259,84 @@ export async function getRadarRows(date: string): Promise<RadarSnapshotRow[]> {
   return out;
 }
 
+/** Kontorsnivån för ett kontrolldatum. Tom lista = ingen kontorssnapshot den dagen
+ *  (kontorsnivån började samlas 2026-07-03; veckorutinen kan släpa tills scopet vidgats). */
+export async function getRadarOfficeRows(date: string): Promise<OfficeSnapshotRow[]> {
+  const out: OfficeSnapshotRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase
+      .from("sokleverantor_office_snapshots")
+      .select("snapshot_date, af_leverantor_id, supplier_name, postort, address, nyval")
+      .eq("snapshot_date", date)
+      .order("af_leverantor_id", { ascending: true })
+      .order("postort", { ascending: true })
+      .order("address", { ascending: true })
+      .range(from, from + 999);
+    out.push(...((data ?? []) as OfficeSnapshotRow[]));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
 export async function getNameVariants(): Promise<NameVariant[]> {
   const { data } = await supabase.from("supplier_name_variants").select("variant, supplier_id").range(0, 999);
   return (data ?? []) as NameVariant[];
 }
 
-/** Radar-diff mellan två snapshots, nycklad på AF:s leverantörs-id (namnbytessäker). */
-export function diffRadar(prev: RadarSnapshotRow[], curr: RadarSnapshotRow[]): RadarEvent[] {
+/** Antal kontor per postort och leverantör — multiset, så att en av två
+ *  Stockholmsadresser som försvinner också syns. Nycklad på af_leverantor_id (text). */
+function officesByPostort(rows: OfficeSnapshotRow[]): Map<string, Map<string, number>> {
+  const byId = new Map<string, Map<string, number>>();
+  for (const r of rows) {
+    let m = byId.get(r.af_leverantor_id);
+    if (!m) {
+      m = new Map();
+      byId.set(r.af_leverantor_id, m);
+    }
+    m.set(r.postort, (m.get(r.postort) ?? 0) + 1);
+  }
+  return byId;
+}
+
+/** "borta: Kiruna, Boden · nya: Umeå" — eller null när kontorsdata saknas för något av datumen. */
+function officeChangeDetail(
+  id: string,
+  prevOffices: Map<string, Map<string, number>>,
+  currOffices: Map<string, Map<string, number>>,
+): string | null {
+  if (!prevOffices.size || !currOffices.size) return null;
+  const p = prevOffices.get(id) ?? new Map<string, number>();
+  const c = currOffices.get(id) ?? new Map<string, number>();
+  const orter = new Set([...p.keys(), ...c.keys()]);
+  const gone: string[] = [];
+  const added: string[] = [];
+  for (const ort of orter) {
+    const before = p.get(ort) ?? 0;
+    const after = c.get(ort) ?? 0;
+    if (after < before) gone.push(ort);
+    if (after > before) added.push(ort);
+  }
+  gone.sort((a, b) => a.localeCompare(b, "sv"));
+  added.sort((a, b) => a.localeCompare(b, "sv"));
+  const parts = [
+    ...(gone.length ? [`borta: ${gone.join(", ")}`] : []),
+    ...(added.length ? [`nya: ${added.join(", ")}`] : []),
+  ];
+  return parts.length ? parts.join(" · ") : null;
+}
+
+/** Radar-diff mellan två snapshots, nycklad på AF:s leverantörs-id (namnbytessäker).
+ *  Med kontorsrader för båda datumen namnges även VILKA kontor (postort) som ändrats. */
+export function diffRadar(
+  prev: RadarSnapshotRow[],
+  curr: RadarSnapshotRow[],
+  prevOfficeRows: OfficeSnapshotRow[] = [],
+  currOfficeRows: OfficeSnapshotRow[] = [],
+): RadarEvent[] {
   const prevMap = new Map(prev.map((r) => [r.af_leverantor_id, r]));
   const currMap = new Map(curr.map((r) => [r.af_leverantor_id, r]));
+  const prevOffices = officesByPostort(prevOfficeRows);
+  const currOffices = officesByPostort(currOfficeRows);
   const events: RadarEvent[] = [];
   for (const [id, c] of currMap) {
     const p = prevMap.get(id);
@@ -279,9 +348,10 @@ export function diffRadar(prev: RadarSnapshotRow[], curr: RadarSnapshotRow[]): R
       continue;
     }
     if (p.offices_count !== c.offices_count) {
+      const change = officeChangeDetail(String(id), prevOffices, currOffices);
       events.push({
         type: "radar_offices", supplier_name: c.supplier_name, supplier_id: c.supplier_id,
-        detail: `Kontor ${p.offices_count} → ${c.offices_count}`,
+        detail: `${p.offices_count} → ${c.offices_count} kontor${change ? ` (${change})` : ""}`,
       });
     }
     if (p.any_nyval !== c.any_nyval) {

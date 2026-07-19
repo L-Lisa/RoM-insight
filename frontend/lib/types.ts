@@ -109,6 +109,17 @@ export interface RadarSnapshotRow {
   any_nyval: boolean;
 }
 
+/** Radarn på kontorsnivå: ett kontor i AF:s söktjänst vid ett kontrolldatum.
+ *  af_leverantor_id är text i tabellen (till skillnad från snapshots-tabellens bigint). */
+export interface OfficeSnapshotRow {
+  snapshot_date: string;
+  af_leverantor_id: string;
+  supplier_name: string;
+  postort: string;
+  address: string;
+  nyval: boolean | null;
+}
+
 /** Radar-händelse — beräknad ur skillnaden mellan två snapshots. Fakta, aldrig orsak. */
 export interface RadarEvent {
   type: "radar_left" | "radar_entered" | "radar_offices" | "radar_nyval_off" | "radar_nyval_on";
