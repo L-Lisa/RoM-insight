@@ -26,6 +26,22 @@ export function weightedSum(c: RomResult, weights: PeriodWeights): number | null
   );
 }
 
+/**
+ * Högsta viktade resultat ett avtal kan nå på OFÖRÄNDRAD deltagarvolym och
+ * nivåmix: varje deltagare kan som mest bidra med RR1+RR2 = 2 godkända
+ * resultat, så taket = Σ(deltagare_L × vikt_L) ÷ Σ(deltagare_L), dvs det
+ * deltagarviktade snittet av nivåvikterna. Ett mål över taket kräver fler
+ * eller andra deltagare — då ska verktyget säga det, inte visa en siffra.
+ * Null när nivådata saknas.
+ */
+export function maxAchievableScore(c: RomResult, weights: PeriodWeights): number | null {
+  const pa = c.participants_a, pb = c.participants_b, pc = c.participants_c;
+  if (pa === null || pb === null || pc === null) return null;
+  const total = pa + pb + pc;
+  if (total <= 0) return null;
+  return (pa * weights.weight_a + pb * weights.weight_b + pc * weights.weight_c) / total;
+}
+
 export interface Requirement {
   /** Viktad summa som saknas upp till målet. */
   neededWeighted: number;
