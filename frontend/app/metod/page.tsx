@@ -122,8 +122,7 @@ export default async function MethodPage() {
       <Section title="Revisioner">
         <p>
           Arbetsförmedlingen reviderar historiska perioder retroaktivt när sena resultatersättningar godkänns.
-          Vi använder den senaste tillgängliga revisionen per period. Bekräftade avvikelser dokumenteras i
-          rättelseloggen nedan.
+          Vi använder den senaste tillgängliga revisionen per period.
         </p>
       </Section>
 

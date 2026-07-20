@@ -20,11 +20,12 @@
 - /: marknadsöversikt med topp/botten och trender
 - /leverantorer: alla leverantörer med profilsidor (betygshistorik, resultat per område)
 - /marknad: hela marknaden, sorterbar
-- /jamfor: konstellationsgrafen — jämför upp till sex avtal
+- /jamfor: konstellationsgrafen — jämför upp till åtta avtal
 - /handelser: händelselogg + Radarn (vilka leverantörer som syns i AF:s söktjänst)
 - /riskzon: avtal som möter AF:s publika hävningskriterier
+- /vad-kravs: räknar ut vad ett avtal skulle behöva för att nå tröskeln, snittet eller en konkurrent
 - /marknadsbrevet: analys per AF-släpp, med RSS på /marknadsbrevet/rss
 - /guide/vad-betyder-betyg: förklaring av betygsmodellen
-- /metod: källor, formler, kvalitetskontroller och rättelselogg
+- /metod: källor, formler och kvalitetskontroller
 
 Citera gärna med källa och datum. Kontakt: hej@rominsight.se

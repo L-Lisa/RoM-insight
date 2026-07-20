@@ -11,8 +11,21 @@ import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnap
  */
 
 export async function getPeriods(): Promise<string[]> {
-  // Markörloop: ett litet anrop per period. En "hämta alla datum"-fråga vore
-  // trunkerad av PostgREST:s 1000-raderstak (rom_results har 7000+ rader).
+  // period_weights har exakt en rad per resultatperiod (samma källa som
+  // getAllPeriodWeights och alla per-period-viktuppslag litar på) → ETT anrop
+  // i stället för en markörloop med ett anrop per period. Faller tillbaka på
+  // rom_results-markören om vikttabellen skulle vara tom.
+  const { data } = await supabase
+    .from("period_weights")
+    .select("period")
+    .order("period", { ascending: true });
+  if (data?.length) return data.map((r) => r.period as string);
+  return getPeriodsFromResults();
+}
+
+/** Fallback: markörloop mot rom_results (PostgREST:s 1000-raderstak gör en
+ *  enkel distinct-fråga otillförlitlig när tabellen har 7000+ rader). */
+async function getPeriodsFromResults(): Promise<string[]> {
   const periods: string[] = [];
   let cursor: string | null = null;
   for (;;) {
@@ -186,19 +199,19 @@ export function diffPeriods(prev: RomResult[], curr: RomResult[], prevPeriod: st
   return events;
 }
 
-/** Marknads-KPI:er per period för utvecklingskurvan. */
+/** Marknads-KPI:er per period för utvecklingskurvan. Perioderna hämtas
+ *  parallellt (sekventiellt var en av startsidans tyngsta väntningar). */
 export async function getMarketSeries(periods: string[]) {
-  const series = [];
-  for (const period of periods) {
-    const rows = await getPeriodRows(period);
-    series.push({
+  const perPeriod = await Promise.all(periods.map((p) => getPeriodRows(p)));
+  return periods.map((period, i) => {
+    const rows = perPeriod[i];
+    return {
       period,
       contracts: rows.length,
       suppliers: new Set(rows.map((r) => r.supplier)).size,
       participants: rows.reduce((s, r) => s + (r.participants ?? 0), 0),
-    });
-  }
-  return series;
+    };
+  });
 }
 
 /** Kommun → leveransområde (AF:s leveransområdesdokument, laddad av systerprojektet). */
@@ -251,6 +264,18 @@ export async function getRadarDates(): Promise<string[]> {
     dates.push(cursor);
   }
   return dates;
+}
+
+/** Senaste radar-kontrolldatumet i ETT anrop (getRadarDates markörloop växer
+ *  med varje veckosnapshot; profilsidan behöver bara det senaste). */
+export async function getLatestRadarDate(): Promise<string | null> {
+  const { data } = await supabase
+    .from("sokleverantor_snapshots")
+    .select("snapshot_date")
+    .order("snapshot_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.snapshot_date as string) ?? null;
 }
 
 export async function getRadarRows(date: string): Promise<RadarSnapshotRow[]> {
@@ -410,9 +435,8 @@ export async function getSupplierRadarStatus(
   sup: Supplier,
   variants: NameVariant[],
 ): Promise<{ checked: string; present: boolean } | null> {
-  const dates = await getRadarDates();
-  if (!dates.length) return null;
-  const latest = dates[dates.length - 1];
+  const latest = await getLatestRadarDate();
+  if (!latest) return null;
   const names = [sup.name, ...variants.filter((v) => v.supplier_id === sup.id).map((v) => v.variant)];
   const [byId, byName] = await Promise.all([
     supabase.from("sokleverantor_snapshots").select("id").eq("snapshot_date", latest).eq("supplier_id", sup.id).limit(1),

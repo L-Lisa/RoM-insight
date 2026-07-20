@@ -66,9 +66,14 @@ export default async function EventsPage() {
   const missing = latestRadar
     ? radarMissingSuppliers(latestStatsRows, latestRadarRows, suppliers, variants)
     : [];
-  const coverageGaps = latestRadar
+  // En leverantör kan aldrig vara både "helt osynlig" och "syns men saknar
+  // kontor" — skulle snapshot-tabellerna vara osynkade filtrerar vi bort
+  // dubletten här (helt osynlig vinner).
+  const missingIds = new Set(missing.map((s) => s.id));
+  const coverageGaps = (latestRadar
     ? radarCoverageGaps(latestStatsRows, latestOfficeRows, municipalities, suppliers, variants)
-    : [];
+    : []
+  ).filter((g) => !missingIds.has(g.supplier.id));
 
   return (
     <div className="space-y-8">

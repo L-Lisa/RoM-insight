@@ -77,11 +77,15 @@ export default async function SupplierPage({ params }: Props) {
     getNameVariants(),
   ]);
   if (!rows.length) notFound();
-  const radarStatus = await getSupplierRadarStatus(sup, variants);
 
-  const latestAll = latestPeriod ? await getPeriodRows(latestPeriod) : [];
-  const weights = latestPeriod ? await getPeriodWeights(latestPeriod) : null;
-  const weightsByPeriod = new Map((await getAllPeriodWeights()).map((w) => [w.period, w]));
+  // Oberoende uppslag — kör parallellt i st.f. kedjade await (snabbare profil).
+  const [radarStatus, latestAll, weights, allPeriodWeights] = await Promise.all([
+    getSupplierRadarStatus(sup, variants),
+    latestPeriod ? getPeriodRows(latestPeriod) : Promise.resolve([] as RomResult[]),
+    latestPeriod ? getPeriodWeights(latestPeriod) : Promise.resolve(null),
+    getAllPeriodWeights(),
+  ]);
+  const weightsByPeriod = new Map(allPeriodWeights.map((w) => [w.period, w]));
   // Percentil och områdessnitt räknas ENDAST mot betygsatta avtal (betygsregeln,
   // isRankable) — under AF:s betygsvillkor är viktat resultat inte jämförbart.
   const allScores = latestAll

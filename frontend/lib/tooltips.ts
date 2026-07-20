@@ -62,7 +62,7 @@ export const explain: Record<string, TwoLayerText> = {
   },
   radarn: {
     af: "Arbetsförmedlingens söktjänst \"Sök leverantör inom rusta och matcha\" visar de leverantörer och kontor arbetssökande kan välja mellan just nu.",
-    plain: "På ren svenska: statistikfilerna släpar upp till två månader, men söktjänsten ändras när något händer. Radarn är RoM Insights återkommande koll av söktjänsten. Försvinner en leverantör där syns det här, långt före statistiken.",
+    plain: "På ren svenska: statistikfilerna släpar upp till två månader, men söktjänsten ändras när något händer. Radarn jämför söktjänsten med statistiken och lyfter två saker: leverantörer med avtal som inte syns alls, och leverantörer som syns men saknar kontor i sina avtalsområden.",
   },
 };
 
