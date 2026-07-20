@@ -422,12 +422,13 @@ export async function getSupplierRadarStatus(
   return { checked: latest, present };
 }
 
-/** Alla avtalsserier (kompakt) för konstellationsmolnet. */
+/** Alla avtalsserier (kompakt) för konstellationsmolnet. Perioderna hämtas
+ *  parallellt — sekventiellt var den tyngsta väntan på startsidan och /jamfor. */
 export async function getAllCloudSeries(periods: string[]): Promise<CloudSeries[]> {
+  const perPeriod = await Promise.all(periods.map((p) => getPeriodRows(p)));
   const byKey = new Map<string, CloudSeries>();
   for (let i = 0; i < periods.length; i++) {
-    const rows = await getPeriodRows(periods[i]);
-    for (const r of rows) {
+    for (const r of perPeriod[i]) {
       const key = `${r.supplier}|${r.delivery_area}`;
       let s = byKey.get(key);
       if (!s) {

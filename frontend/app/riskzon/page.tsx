@@ -17,13 +17,16 @@ export const metadata = {
 export default async function RiskZonePage() {
   const periods = await getPeriods();
   const latest = periods[periods.length - 1];
-  const rows = latest ? await getPeriodRows(latest) : [];
+  // Hämta alla perioder parallellt en gång (flaggkolumnen publiceras bara vissa
+  // perioder — vi letar den senaste som har den, utan sekventiell await-loop).
+  const allRows = await Promise.all(periods.map((p) => getPeriodRows(p)));
+  const rows = allRows[allRows.length - 1] ?? [];
 
   // Senaste period där AF själva publicerade riskflaggan
   let afFlagPeriod: string | null = null;
   let afFlags = new Map<string, boolean>();
   for (let i = periods.length - 1; i >= 0; i--) {
-    const p = await getPeriodRows(periods[i]);
+    const p = allRows[i];
     if (p.some((r) => r.risk_of_termination !== null)) {
       afFlagPeriod = periods[i];
       afFlags = new Map(p.map((r) => [r.ka_number ?? `${r.supplier}|${r.delivery_area}`, r.risk_of_termination === true]));

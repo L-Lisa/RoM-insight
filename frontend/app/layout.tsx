@@ -48,9 +48,9 @@ export default function RootLayout({
               <Link href="/om" className="underline underline-offset-2 hover:text-[var(--text)]">om sajten</Link>
             </p>
             <p>
-              Hittar du ett fel har du gjort oss en tjänst — vi rättar inom 48 timmar.{" "}
+              Sajten är under utveckling — dubbelkolla gärna siffrorna mot källfilen.{" "}
               <Link href="/metod#hitta-felet" className="underline underline-offset-2 hover:text-[var(--text)]">
-                Läs om Hitta felet-garantin
+                Så gör du
               </Link>
             </p>
           </div>

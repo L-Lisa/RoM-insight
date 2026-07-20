@@ -84,8 +84,8 @@ export function SourceBreakdown({ row, weights }: { row: RomResult; weights: Per
             <span style={{ color: "var(--positive)" }}>✓ stämmer med AF:s publicerade värde</span>
           ) : row.weighted_score !== null ? (
             <span style={{ color: "var(--risk)" }}>
-              ≠ AF:s publicerade {formatScore(row.weighted_score)}. Det ska inte hända, rapportera gärna
-              via Hitta felet-garantin
+              ≠ AF:s publicerade {formatScore(row.weighted_score)}. Det ska inte hända — dubbelkolla gärna mot
+              källfilen
             </span>
           ) : null}
         </p>
