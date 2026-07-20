@@ -11,21 +11,12 @@ import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnap
  */
 
 export async function getPeriods(): Promise<string[]> {
-  // period_weights har exakt en rad per resultatperiod (samma källa som
-  // getAllPeriodWeights och alla per-period-viktuppslag litar på) → ETT anrop
-  // i stället för en markörloop med ett anrop per period. Faller tillbaka på
-  // rom_results-markören om vikttabellen skulle vara tom.
-  const { data } = await supabase
-    .from("period_weights")
-    .select("period")
-    .order("period", { ascending: true });
-  if (data?.length) return data.map((r) => r.period as string);
-  return getPeriodsFromResults();
-}
-
-/** Fallback: markörloop mot rom_results (PostgREST:s 1000-raderstak gör en
- *  enkel distinct-fråga otillförlitlig när tabellen har 7000+ rader). */
-async function getPeriodsFromResults(): Promise<string[]> {
+  // Markörloop mot rom_results — DATAKÄLLAN för vilka perioder som faktiskt är
+  // publicerade. Medvetet INTE period_weights: ingest.py skriver rom_results
+  // men vikterna backfillas separat (scripts/backfill.py), så en nyimporterad
+  // period saknar vikter en stund — den får aldrig döljas här. En "hämta alla
+  // datum"-fråga vore dessutom trunkerad av PostgREST:s 1000-raderstak
+  // (rom_results har 7000+ rader). Perioderna är få (~8) så loopen är billig.
   const periods: string[] = [];
   let cursor: string | null = null;
   for (;;) {
