@@ -4,7 +4,7 @@ import { Tooltip } from "@/components/Tooltip";
 import { explain } from "@/lib/tooltips";
 import {
   diffPeriods,
-  diffRadar,
+  getMunicipalities,
   getNameVariants,
   getPeriodRows,
   getPeriods,
@@ -12,10 +12,11 @@ import {
   getRadarOfficeRows,
   getRadarRows,
   getSuppliers,
+  radarCoverageGaps,
   radarMissingSuppliers,
 } from "@/lib/queries";
 import { periodLabel, slugify } from "@/lib/format";
-import { MarketEvent, RadarEvent } from "@/lib/types";
+import { MarketEvent } from "@/lib/types";
 
 export const revalidate = 3600;
 
@@ -33,14 +34,6 @@ const TYPE_META: Record<MarketEvent["type"], { label: string; color: string }> =
   risk_off: { label: "Risk borta", color: "var(--text-dim)" },
 };
 
-const RADAR_META: Record<RadarEvent["type"], { label: string; color: string }> = {
-  radar_left: { label: "Borta från radarn", color: "var(--terminated)" },
-  radar_entered: { label: "Ny på radarn", color: "var(--positive)" },
-  radar_offices: { label: "Kontor ändrat", color: "var(--compare-1)" },
-  radar_nyval_off: { label: "Nyval pausat", color: "var(--risk)" },
-  radar_nyval_on: { label: "Nyval öppet igen", color: "var(--text-dim)" },
-};
-
 function radarDateLabel(d: string): string {
   return new Date(`${d}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" });
 }
@@ -55,25 +48,26 @@ export default async function EventsPage() {
     byTransition.push({ period: periods[i], prevPeriod: periods[i - 1], events });
   }
 
-  // Radarn: senaste snapshot + diff mot föregående + korskoll mot statistiken
+  // Radarn: senaste snapshot jämförs mot senaste statistiken (Lisas beslut
+  // 2026-07-20: enklare än snapshot-mot-snapshot — baslinjen är statistiken).
   const radarDates = await getRadarDates();
   const latestRadar = radarDates.length ? radarDates[radarDates.length - 1] : null;
-  const prevRadar = radarDates.length > 1 ? radarDates[radarDates.length - 2] : null;
-  const [latestRadarRows, prevRadarRows, latestOfficeRows, prevOfficeRows, suppliers, variants] = await Promise.all([
+  const [latestRadarRows, latestOfficeRows, municipalities, suppliers, variants] = await Promise.all([
     latestRadar ? getRadarRows(latestRadar) : Promise.resolve([]),
-    prevRadar ? getRadarRows(prevRadar) : Promise.resolve([]),
     latestRadar ? getRadarOfficeRows(latestRadar) : Promise.resolve([]),
-    prevRadar ? getRadarOfficeRows(prevRadar) : Promise.resolve([]),
+    getMunicipalities(),
     getSuppliers(),
     getNameVariants(),
   ]);
-  const radarEvents = prevRadar ? diffRadar(prevRadarRows, latestRadarRows, prevOfficeRows, latestOfficeRows) : [];
   const latestStatsRows = allRows[allRows.length - 1] ?? [];
   // Områdessidan finns bara för områden i senaste perioden — äldre händelser
   // kan röra områden som lämnat statistiken; de länkas inte (annars 404).
   const currentAreas = new Set(latestStatsRows.map((r) => r.delivery_area));
   const missing = latestRadar
     ? radarMissingSuppliers(latestStatsRows, latestRadarRows, suppliers, variants)
+    : [];
+  const coverageGaps = latestRadar
+    ? radarCoverageGaps(latestStatsRows, latestOfficeRows, municipalities, suppliers, variants)
     : [];
 
   return (
@@ -107,12 +101,12 @@ export default async function EventsPage() {
           {missing.length > 0 && (
             <div>
               <h3 className="text-sm font-medium">
-                {missing.length} leverantörer har avtal i statistiken ({periodLabel(periods[periods.length - 1])})
+                {missing.length} {missing.length === 1 ? "leverantör" : "leverantörer"} har avtal i statistiken ({periodLabel(periods[periods.length - 1])})
                 men syntes inte alls i söktjänsten vid senaste kontrollen ({radarDateLabel(latestRadar)}).
               </h3>
               <p className="text-xs text-[var(--text-dim)] mb-2">
-                Listan fångar bara leverantörer som saknas helt — kontor som försvinner ett och ett syns under
-                &rdquo;Sedan förra kollen&rdquo;.
+                Listan fångar leverantörer som saknas helt.
+                {coverageGaps.length > 0 && " Leverantörer som syns i söktjänsten men saknar kontor i sina avtalsområden listas nedanför."}
               </p>
               <div className="flex flex-wrap gap-2">
                 {missing.map((s) => (
@@ -129,36 +123,27 @@ export default async function EventsPage() {
             </div>
           )}
 
-          {radarEvents.length > 0 && prevRadar && (
+          {coverageGaps.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium mb-2">
-                Sedan förra kollen ({radarDateLabel(prevRadar)} → {radarDateLabel(latestRadar)})
+              <h3 className="text-sm font-medium">
+                {coverageGaps.length} {coverageGaps.length === 1 ? "leverantör" : "leverantörer"} syns i söktjänsten men saknar synligt kontor i minst ett av sina
+                avtalsområden ({periodLabel(periods[periods.length - 1])}) vid senaste kontrollen ({radarDateLabel(latestRadar)})
               </h3>
+              <p className="text-xs text-[var(--text-dim)] mb-2">
+                Kontor mappas till leveransområde via AF:s kommunlista. Leverantörer vars kontorsorter inte
+                säkert kan mappas till en kommun räknas inte med här.
+              </p>
               <div className="divide-y divide-[var(--line-soft)] border border-[var(--line-soft)] rounded-lg max-h-[360px] overflow-y-auto">
-                {radarEvents
-                  .sort((a, b) => a.supplier_name.localeCompare(b.supplier_name, "sv"))
-                  .map((e, i) => {
-                    const meta = RADAR_META[e.type];
-                    const sup = e.supplier_id !== null ? suppliers.find((s) => s.id === e.supplier_id) : undefined;
-                    return (
-                      <div key={i} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                        <span
-                          className="shrink-0 text-xs px-2 py-0.5 rounded-[var(--radius-badge)] border"
-                          style={{ color: meta.color, borderColor: meta.color, opacity: 0.9 }}
-                        >
-                          {meta.label}
-                        </span>
-                        {sup ? (
-                          <Link href={`/leverantorer/${sup.slug}`} className="hover:text-[var(--compare-1)] truncate">
-                            {e.supplier_name}
-                          </Link>
-                        ) : (
-                          <span className="truncate">{e.supplier_name}</span>
-                        )}
-                        <span className="ml-auto text-[var(--text-dim)] text-xs shrink-0">{e.detail}</span>
-                      </div>
-                    );
-                  })}
+                {coverageGaps.map((g) => (
+                  <div key={g.supplier.id} className="px-4 py-2.5 text-sm">
+                    <Link href={`/leverantorer/${g.supplier.slug}`} className="hover:text-[var(--compare-1)] font-medium">
+                      {g.supplier.name}
+                    </Link>
+                    <span className="block text-xs text-[var(--text-dim)] mt-0.5">
+                      Avtal utan synligt kontor: {g.uncoveredAreas.join(", ")} · kontor finns i: {g.officePostorter.join(", ")}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}

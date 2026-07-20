@@ -14,9 +14,11 @@ import { SourceBreakdown } from "@/components/SourceBreakdown";
 import {
   getAllPeriodWeights,
   getLatestPeriod,
+  getMunicipalities,
   getNameVariants,
   getPeriodRows,
   getPeriodWeights,
+  getRadarOfficeRows,
   getSupplierBySlug,
   getSupplierOffices,
   getSupplierRadarStatus,
@@ -24,6 +26,8 @@ import {
   getSupplierResults,
   getSuppliers,
   percentileOf,
+  radarCoverageGaps,
+  RadarCoverageGap,
 } from "@/lib/queries";
 import { contractInsight } from "@/lib/insights";
 import { formatScore, isRankable, periodLabel, periodShort, slugify } from "@/lib/format";
@@ -102,6 +106,16 @@ export default async function SupplierPage({ params }: Props) {
   const isExited = latestRows.length === 0;
   const lastSeen = rows[rows.length - 1].dataset_date;
 
+  // AAA-fallet: syns i söktjänsten, men utan kontor i sina avtalsområden
+  let coverageGap: RadarCoverageGap | null = null;
+  if (radarStatus?.present && !isExited && latestRows.length) {
+    const [officeRows, municipalities] = await Promise.all([
+      getRadarOfficeRows(radarStatus.checked),
+      getMunicipalities(),
+    ]);
+    coverageGap = radarCoverageGaps(latestRows, officeRows, municipalities, [sup], variants)[0] ?? null;
+  }
+
   // Per avtal (område): serie + senaste värde
   const byArea = new Map<string, RomResult[]>();
   for (const r of rows) {
@@ -162,6 +176,31 @@ export default async function SupplierPage({ params }: Props) {
           {new Date(`${radarStatus.checked}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })}
           ), trots avtal i senaste statistiken. AF publicerar inte orsaken; det kan vara avtal som löpt ut, eget
           utträde, namnbyte eller hävning. Kolla själv i{" "}
+          <a
+            href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
+            className="link"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            AF:s söktjänst
+          </a>
+          . <Link href="/handelser" className="link">Mer i Radarn →</Link>
+        </div>
+      )}
+
+      {!isExited && coverageGap && (
+        <div className="card p-4 text-sm leading-relaxed">
+          <span className="mono-label block mb-1">
+            <Tooltip label="Radarn" layers={explain.radarn} />
+          </span>
+          Syns i Arbetsförmedlingens söktjänst (kontor i {coverageGap.officePostorter.join(", ")}), men utan
+          synligt kontor i{" "}
+          {coverageGap.uncoveredAreas.length === coverageGap.contractAreas.length
+            ? "något av avtalsområdena"
+            : `${coverageGap.uncoveredAreas.length} av ${coverageGap.contractAreas.length} avtalsområden`}{" "}
+          ({coverageGap.uncoveredAreas.join(", ")}) vid senaste kontrollen (
+          {new Date(`${radarStatus!.checked}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" })}
+          ). Vad det beror på framgår inte av AF:s data. Kolla själv i{" "}
           <a
             href="https://arbetsformedlingen.se/for-arbetssokande/extra-stod/stod-a-o/rusta-och-matcha/sok-leverantor-inom-rusta-och-matcha"
             className="link"

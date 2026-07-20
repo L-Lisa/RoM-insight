@@ -120,14 +120,6 @@ export interface OfficeSnapshotRow {
   nyval: boolean | null;
 }
 
-/** Radar-händelse — beräknad ur skillnaden mellan två snapshots. Fakta, aldrig orsak. */
-export interface RadarEvent {
-  type: "radar_left" | "radar_entered" | "radar_offices" | "radar_nyval_off" | "radar_nyval_on";
-  supplier_name: string;
-  supplier_id: number | null;
-  detail: string;
-}
-
 export interface NameVariant {
   variant: string;
   supplier_id: number;
