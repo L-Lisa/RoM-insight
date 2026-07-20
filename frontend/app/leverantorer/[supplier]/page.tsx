@@ -285,6 +285,16 @@ export default async function SupplierPage({ params }: Props) {
             </tbody>
           </table>
         </div>
+        {!isExited && biggest && biggest.latest.dataset_date === latestPeriod && (
+          <p className="text-sm mt-3">
+            <Link
+              href={`/vad-kravs?avtal=${encodeURIComponent(`${name}|${biggest.area}`)}`}
+              className="link"
+            >
+              Vad krävs för att nå tröskeln, snittet eller toppen? →
+            </Link>
+          </p>
+        )}
       </section>
 
       {!isExited && biggest && biggest.latest.dataset_date === latestPeriod && biggest.latest.weighted_score !== null && (

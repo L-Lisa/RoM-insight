@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { PeriodWeights } from "@/lib/types";
 import { formatScore } from "@/lib/format";
-import { AF_TERMINATION_THRESHOLD, AF_TERMINATION_THRESHOLD_LABEL } from "@/lib/afRules";
+import { AF_TERMINATION_THRESHOLD } from "@/lib/afRules";
 
 /**
  * T5 interaktiv: dra i antalet ytterligare godkända resultatredovisningar och
  * se det viktade måttet räknas om live. Samma verifierade formel som resten av
- * T5 — ett resultat väger olika per nivå (A lägst, C högst), därför ett spann.
+ * "Vad krävs?" — ett resultat väger olika per nivå (A lägst, C högst), därför
+ * ett spann. `target` är målet i viktat resultat (0,2-tröskeln som standard;
+ * områdessnitt/konkurrent/topp på /vad-kravs).
  */
-
-const THRESHOLD = AF_TERMINATION_THRESHOLD;
 
 export function WhatIfSlider({
   currentWeightedSum,
@@ -19,18 +19,22 @@ export function WhatIfSlider({
   weights,
   start,
   max,
+  target = AF_TERMINATION_THRESHOLD,
 }: {
   currentWeightedSum: number;
   participants: number;
   weights: PeriodWeights;
   start: number;
   max: number;
+  target?: number;
 }) {
   const [n, setN] = useState(start);
   const lo = (currentWeightedSum + n * weights.weight_a) / (2 * participants);
   const hi = (currentWeightedSum + n * weights.weight_c) / (2 * participants);
-  const guaranteed = lo >= THRESHOLD;
-  const possible = hi >= THRESHOLD;
+  const guaranteed = lo >= target;
+  const possible = hi >= target;
+  // AF:s tröskel skrivs "0,2" i prosa överallt — undvik formatScores "0,200" här.
+  const targetLabel = target === AF_TERMINATION_THRESHOLD ? "tröskeln" : formatScore(target);
 
   return (
     <div className="no-print mt-3 pt-3 border-t border-[var(--line-soft)]">
@@ -57,11 +61,11 @@ export function WhatIfSlider({
         )}{" "}
         <span className="text-xs text-[var(--text-dim)]">(alla i nivå A resp. nivå C)</span>{" "}
         {guaranteed ? (
-          <span style={{ color: "var(--positive)" }}>✓ över tröskeln oavsett nivå</span>
+          <span style={{ color: "var(--positive)" }}>✓ når {targetLabel} oavsett nivå</span>
         ) : possible ? (
           <span style={{ color: "var(--risk)" }}>kan räcka — beror på deltagarnas nivå</span>
         ) : (
-          <span className="text-[var(--text-dim)]">fortfarande under {AF_TERMINATION_THRESHOLD_LABEL}</span>
+          <span className="text-[var(--text-dim)]">fortfarande under {targetLabel}</span>
         )}
       </p>
     </div>
