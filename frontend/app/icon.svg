@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="RoM Insight Marknadslinsen favicon">
+  <rect width="256" height="256" rx="54" fill="#141B2C"/>
+  <path d="M32 126C58 72 93 48 132 48c38 0 70 19 94 54" fill="none" stroke="#7B8FF2" stroke-width="18" stroke-linecap="round"/>
+  <path d="M32 126c26 54 61 78 100 78 38 0 70-19 94-54" fill="none" stroke="#4EC5E5" stroke-width="18" stroke-linecap="round"/>
+  <path d="M58 158l44-39 37 19 57-63" fill="none" stroke="#F4F7FF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="58" cy="158" r="11" fill="#4EC5E5"/><circle cx="102" cy="119" r="11" fill="#9B7BF7"/><circle cx="139" cy="138" r="11" fill="#3BC9A5"/><circle cx="196" cy="75" r="12" fill="#7B8FF2"/>
+</svg>

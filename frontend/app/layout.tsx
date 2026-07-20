@@ -29,8 +29,12 @@ export default function RootLayout({
       <body className={`${geist.variable} ${geist.className} min-h-screen antialiased`}>
         <header className="border-b border-[var(--line)] bg-[var(--bg-raised)] sticky top-0 z-30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
-            <Link href="/" className="text-lg font-semibold tracking-tight shrink-0">
-              RoM <span className="text-[var(--compare-1)]">Insight</span>
+            <Link href="/" className="flex items-center gap-2.5 text-lg font-semibold tracking-tight shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/marknadslinsen.svg" alt="" width={28} height={28} className="rounded-md" />
+              <span>
+                RoM <span className="text-[var(--compare-1)]">Insight</span>
+              </span>
             </Link>
             <NavLinks />
           </div>
