@@ -2,7 +2,7 @@ import { DataStamp } from "@/components/DataStamp";
 import { VadKravsExplorer, WktContract } from "@/components/VadKravsExplorer";
 import { getLatestPeriod, getPeriodRows, getPeriodWeights } from "@/lib/queries";
 import { periodLabel } from "@/lib/format";
-import { weightedSum } from "@/lib/whatItTakes";
+import { weightedSum, maxAchievableScore } from "@/lib/whatItTakes";
 
 export const revalidate = 3600;
 
@@ -64,6 +64,7 @@ export default async function VadKravsPage({ searchParams }: Props) {
     r: r.rating,
     p: r.participants,
     sum: weights ? weightedSum(r, weights) : null,
+    ceiling: weights ? maxAchievableScore(r, weights) : null,
   }));
 
   const sel = decodeAvtal(avtal);

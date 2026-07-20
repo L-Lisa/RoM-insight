@@ -27,6 +27,8 @@ export interface WktContract {
   p: number;
   /** Viktad resultatsumma (täljaren) eller null när nivådata saknas. */
   sum: number | null;
+  /** Högsta nåbara viktade resultat på nuvarande deltagarmix, eller null. */
+  ceiling: number | null;
 }
 
 type Goal =
@@ -130,6 +132,11 @@ export function VadKravsExplorer({
     canCompute && targetScore !== null
       ? requiredResults(selected!.sum!, selected!.p, weights!, targetScore)
       : null;
+  // Går målet ens att nå på nuvarande deltagarmix? (taket = deltagarviktat
+  // snitt av nivåvikterna). Inträffar aldrig med dagens data — försiktighet
+  // om framtida siffror eller ett delat konkurrentmål skulle spränga taket.
+  const unreachable =
+    req !== null && targetScore !== null && selected!.ceiling !== null && targetScore > selected!.ceiling + 1e-9;
 
   const goalOptions: { goal: Goal; label: string; disabled?: boolean; hint?: string }[] = selected && areaCtx
     ? [
@@ -272,7 +279,14 @@ export function VadKravsExplorer({
               {/* Resultat */}
               {targetScore !== null && (
                 <div className="card p-5">
-                  {req ? (
+                  {unreachable ? (
+                    <p className="text-sm text-[var(--text-dim)]">
+                      Målet {formatScore(targetScore)} går inte att nå på nuvarande deltagarvolym och nivåmix —
+                      även om varje deltagare nådde både första resultat och godkänd uppföljning skulle det
+                      viktade måttet toppa på {formatScore(selected.ceiling)}. Det skulle kräva fler deltagare
+                      eller en annan nivåfördelning.
+                    </p>
+                  ) : req ? (
                     <>
                       <p className="text-sm">
                         Från viktat <strong className="tabular-nums">{formatScore(selected.ws)}</strong> till{" "}

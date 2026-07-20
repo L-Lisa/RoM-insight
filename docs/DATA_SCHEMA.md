@@ -75,7 +75,31 @@ source — real data (below rating threshold), never an error.
 
 period (pk), weight_a, weight_b, weight_c, source_file
 A/B/C weights read from the Beräkningssnurra sheet per period. Basis for the
-T5 "vad krävs?" feature — the feature is HIDDEN for periods without weights.
+"vad krävs?" feature (/vad-kravs + riskzon cards) — HIDDEN for periods
+without weights.
+
+### "Vad krävs?" formula verification (2026-07-20, before /vad-kravs go-live)
+
+AF's own formula for the weighted result measure:
+  resultatmått = Σ((RR1+RR2) × vikt per nivå) / (2 × antal deltagare)
+- FORWARD verified on ALL 7,084 level-data rows: our computation reproduces
+  AF's published `weighted_score` to within rounding (max abs diff 0.0004999;
+  AF publishes 3 decimals). 0 mismatches. participants always = A+B+C.
+- AF PUBLISHES the Beräkningssnurra explicitly so anyone can compute the
+  measure themselves (confirmed on AF's site 2026-07-20) — validates the
+  whole approach; the weights are AF's, not derived.
+- AF's hävning criteria confirmed independently: betyg 1 + resultatmått
+  "understiger 20 procent" (= our 0.2 threshold) vid båda mättillfällena.
+- INVERSE ("what it takes"): to reach target T at fixed participants,
+  needed weighted = T·2p − current; count range = ceil(needed/weight_c)
+  (fewest, all level C) to ceil(needed/weight_a) (most, all level A).
+- FEASIBILITY CEILING: max reachable score at unchanged participant mix =
+  Σ(participants_L × weight_L)/Σparticipants_L (every participant can give at
+  most RR1+RR2=2). Min ceiling in data = 0.71, max published score = 0.583,
+  so no built-in goal (0.2 / area avg / area top / competitor: 0 of 6,820
+  pairs) is ever unreachable — but /vad-kravs guards it defensively anyway.
+- Repeatable check: `node scripts/verify_vad_kravs.mjs` (24 assertions,
+  real AF rows as fixtures).
 
 ### Revision rule (important)
 
