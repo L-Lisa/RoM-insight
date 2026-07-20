@@ -109,10 +109,12 @@ export default async function MethodPage() {
               Arbetsförmedlingens söktjänst &quot;Sök leverantör inom rusta och matcha&quot;
             </a>{" "}
             — de leverantörer och kontor arbetssökande kan välja mellan just nu. Statistikfilerna släpar
-            upp till två månader; söktjänsten ändras när AF agerar, och Radarn gör skillnaden synlig. Att en
-            leverantör försvinner ur söktjänsten kan bero på avtal som löpt ut, eget utträde, namnbyte eller
-            hävning; AF publicerar inte orsaken och vi påstår ingen. Namnbyten matchas mot vår
-            namnvariantlista innan något visas som försvunnet. Varje kontroll anges med datum.
+            upp till två månader; söktjänsten ändras när AF agerar. Radarn jämför senaste kontrollen av
+            söktjänsten med senaste statistiken: leverantörer med avtal som inte syns alls, och leverantörer
+            utan synligt kontor i sina avtalsområden (kontor mappas till område via AF:s kommunlista; kan en
+            kontorsort inte mappas görs inget påstående). Att en leverantör saknas kan bero på avtal som löpt
+            ut, eget utträde, namnbyte eller hävning; AF publicerar inte orsaken och vi påstår ingen. Namnbyten
+            matchas mot vår namnvariantlista innan något visas som försvunnet. Varje kontroll anges med datum.
           </Term>
         </dl>
       </Section>

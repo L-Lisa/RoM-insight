@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnapshotRow, PeriodWeights, RadarEvent, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "./types";
+import { CloudSeries, MarketEvent, Municipality, NameVariant, Office, OfficeSnapshotRow, PeriodWeights, RadarSnapshotRow, RomResult, Supplier, SupplierRating } from "./types";
 
 /**
  * Dataåtkomstlager. Regler:
@@ -292,104 +292,6 @@ export async function getNameVariants(): Promise<NameVariant[]> {
   return (data ?? []) as NameVariant[];
 }
 
-/** Antal kontor per postort och leverantör — multiset, så att en av två
- *  Stockholmsadresser som försvinner också syns. Nycklad på af_leverantor_id (text). */
-function officesByPostort(rows: OfficeSnapshotRow[]): Map<string, Map<string, number>> {
-  const byId = new Map<string, Map<string, number>>();
-  for (const r of rows) {
-    let m = byId.get(r.af_leverantor_id);
-    if (!m) {
-      m = new Map();
-      byId.set(r.af_leverantor_id, m);
-    }
-    m.set(r.postort, (m.get(r.postort) ?? 0) + 1);
-  }
-  return byId;
-}
-
-/** "borta: Kiruna, Boden · nya: Umeå" — eller null när kontorsdata saknas för något av datumen. */
-function officeChangeDetail(
-  id: string,
-  prevOffices: Map<string, Map<string, number>>,
-  currOffices: Map<string, Map<string, number>>,
-): string | null {
-  if (!prevOffices.size || !currOffices.size) return null;
-  const p = prevOffices.get(id) ?? new Map<string, number>();
-  const c = currOffices.get(id) ?? new Map<string, number>();
-  const orter = new Set([...p.keys(), ...c.keys()]);
-  const gone: string[] = [];
-  const added: string[] = [];
-  for (const ort of orter) {
-    const before = p.get(ort) ?? 0;
-    const after = c.get(ort) ?? 0;
-    if (after < before) gone.push(ort);
-    if (after > before) added.push(ort);
-  }
-  gone.sort((a, b) => a.localeCompare(b, "sv"));
-  added.sort((a, b) => a.localeCompare(b, "sv"));
-  const parts = [
-    ...(gone.length ? [`borta: ${gone.join(", ")}`] : []),
-    ...(added.length ? [`nya: ${added.join(", ")}`] : []),
-  ];
-  return parts.length ? parts.join(" · ") : null;
-}
-
-/** Radar-diff mellan två snapshots, nycklad på AF:s leverantörs-id (namnbytessäker).
- *  Med kontorsrader för båda datumen namnges även VILKA kontor (postort) som ändrats. */
-export function diffRadar(
-  prev: RadarSnapshotRow[],
-  curr: RadarSnapshotRow[],
-  prevOfficeRows: OfficeSnapshotRow[] = [],
-  currOfficeRows: OfficeSnapshotRow[] = [],
-): RadarEvent[] {
-  const prevMap = new Map(prev.map((r) => [r.af_leverantor_id, r]));
-  const currMap = new Map(curr.map((r) => [r.af_leverantor_id, r]));
-  const prevOffices = officesByPostort(prevOfficeRows);
-  const currOffices = officesByPostort(currOfficeRows);
-  const events: RadarEvent[] = [];
-  for (const [id, c] of currMap) {
-    const p = prevMap.get(id);
-    if (!p) {
-      events.push({
-        type: "radar_entered", supplier_name: c.supplier_name, supplier_id: c.supplier_id,
-        detail: `${c.offices_count} kontor`,
-      });
-      continue;
-    }
-    // Kontorsdetaljen räknas alltid: även vid oförändrat ANTAL kan kontor ha
-    // flyttat (Kiruna stänger, Umeå öppnar = 3 → 3) — det ska också synas.
-    // Men: saknas kontorsrader för leverantören på ena sidan trots att
-    // aggregatet säger kontor > 0 (t.ex. partiellt applicerad fil) skulle
-    // detaljen falskt lista ALLA kontor som borta/nya — visa då bara antalet.
-    const oneSideMissing =
-      (!prevOffices.get(String(id)) && p.offices_count > 0) ||
-      (!currOffices.get(String(id)) && c.offices_count > 0);
-    const change = oneSideMissing ? null : officeChangeDetail(String(id), prevOffices, currOffices);
-    if (p.offices_count !== c.offices_count || change !== null) {
-      events.push({
-        type: "radar_offices", supplier_name: c.supplier_name, supplier_id: c.supplier_id,
-        detail: `${p.offices_count} → ${c.offices_count} kontor${change ? ` (${change})` : ""}`,
-      });
-    }
-    if (p.any_nyval !== c.any_nyval) {
-      events.push({
-        type: c.any_nyval ? "radar_nyval_on" : "radar_nyval_off",
-        supplier_name: c.supplier_name, supplier_id: c.supplier_id,
-        detail: c.any_nyval ? "Tar emot nyval igen" : "Tar inte längre emot nyval",
-      });
-    }
-  }
-  for (const [id, p] of prevMap) {
-    if (!currMap.has(id)) {
-      events.push({
-        type: "radar_left", supplier_name: p.supplier_name, supplier_id: p.supplier_id,
-        detail: `${p.offices_count} kontor i förra kollen`,
-      });
-    }
-  }
-  return events;
-}
-
 /**
  * Leverantörer med avtal i statistiken som inte syns i radar-snapshotten.
  * Matchar via supplier_id, kanoniskt namn OCH kända namnvarianter åt båda hållen —
@@ -427,6 +329,80 @@ export function radarMissingSuppliers(
       return true;
     })
     .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+}
+
+/**
+ * Leverantörer som syns i söktjänsten men saknar synligt kontor i minst ett
+ * av sina avtalsområden (AAA-fallet: kontor kvar i Landskrona, avtal i
+ * Stockholm). Kontor mappas till område via postort = kommunnamn — medvetet
+ * KONSERVATIVT: kan inte leverantörens samtliga kontorsorter mappas till en
+ * kommun görs inget påstående alls (hellre saknad flagga än fel råd).
+ */
+export interface RadarCoverageGap {
+  supplier: Supplier;
+  officePostorter: string[];
+  contractAreas: string[];
+  uncoveredAreas: string[];
+}
+
+export function radarCoverageGaps(
+  statsRows: RomResult[],
+  officeRows: OfficeSnapshotRow[],
+  municipalities: Municipality[],
+  suppliers: Supplier[],
+  variants: NameVariant[],
+): RadarCoverageGap[] {
+  const areaByKommun = new Map(municipalities.map((m) => [m.kommun.toLowerCase(), m.delivery_area]));
+  const supplierByName = new Map(suppliers.map((s) => [s.name.toLowerCase(), s]));
+  const byId = new Map(suppliers.map((s) => [s.id, s]));
+  for (const v of variants) {
+    const s = byId.get(v.supplier_id);
+    if (s) supplierByName.set(v.variant.toLowerCase(), s);
+  }
+
+  const officesBySupplier = new Map<number, OfficeSnapshotRow[]>();
+  for (const o of officeRows) {
+    const s = supplierByName.get(o.supplier_name.toLowerCase());
+    if (!s) continue;
+    officesBySupplier.set(s.id, [...(officesBySupplier.get(s.id) ?? []), o]);
+  }
+
+  const contractAreasBySupplier = new Map<string, Set<string>>();
+  for (const r of statsRows) {
+    let set = contractAreasBySupplier.get(r.supplier);
+    if (!set) {
+      set = new Set();
+      contractAreasBySupplier.set(r.supplier, set);
+    }
+    set.add(r.delivery_area);
+  }
+
+  const gaps: RadarCoverageGap[] = [];
+  for (const [supplierName, contractAreas] of contractAreasBySupplier) {
+    const sup = supplierByName.get(supplierName.toLowerCase());
+    if (!sup) continue;
+    const offices = officesBySupplier.get(sup.id);
+    if (!offices || offices.length === 0) continue; // helt osynlig — egen lista
+    const postorter = Array.from(new Set(offices.map((o) => o.postort))).sort((a, b) => a.localeCompare(b, "sv"));
+    const officeAreas = postorter.map((p) => areaByKommun.get(p.toLowerCase()));
+    if (officeAreas.some((a) => a === undefined)) continue; // omappbar kontorsort → inget påstående
+    const covered = new Set(officeAreas as string[]);
+    // Påstå bara "saknar kontor" om avtalsområdet självt finns i kommunmappningen —
+    // annars kan täckning inte avgöras (samma försiktighetsregel som för kontorsorterna).
+    const mappableAreas = new Set(municipalities.map((m) => m.delivery_area));
+    const uncovered = Array.from(contractAreas)
+      .filter((a) => mappableAreas.has(a) && !covered.has(a))
+      .sort((a, b) => a.localeCompare(b, "sv"));
+    if (uncovered.length) {
+      gaps.push({
+        supplier: sup,
+        officePostorter: postorter,
+        contractAreas: Array.from(contractAreas).sort((a, b) => a.localeCompare(b, "sv")),
+        uncoveredAreas: uncovered,
+      });
+    }
+  }
+  return gaps.sort((a, b) => a.supplier.name.localeCompare(b.supplier.name, "sv"));
 }
 
 /** Syns leverantören i senaste radar-snapshotten? null = ingen snapshot finns. */
