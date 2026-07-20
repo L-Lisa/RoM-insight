@@ -1,6 +1,7 @@
 import { PeriodWeights, RomResult } from "@/lib/types";
 import { formatScore, periodLabel } from "@/lib/format";
 import { WhatIfSlider } from "@/components/WhatIfSlider";
+import { weightedSum, requiredResults } from "@/lib/whatItTakes";
 import { AF_TERMINATION_THRESHOLD, AF_TERMINATION_THRESHOLD_LABEL, AF_TERMINATION_MIN_MONTHS } from "@/lib/afRules";
 
 /**
@@ -44,16 +45,11 @@ export function WhatIsNeeded({
       </p>
       <div className="space-y-3">
         {inZone.map((c) => {
-          // Nuvarande viktade resultatsumma och vad som saknas till tröskeln
-          const currentWeightedSum =
-            ((c.rr1_a ?? 0) + (c.rr2_a ?? 0)) * weights.weight_a +
-            ((c.rr1_b ?? 0) + (c.rr2_b ?? 0)) * weights.weight_b +
-            ((c.rr1_c ?? 0) + (c.rr2_c ?? 0)) * weights.weight_c;
-          const neededWeighted = THRESHOLD * 2 * c.participants - currentWeightedSum;
-          if (neededWeighted <= 0) return null;
-          // Ett resultat väger olika beroende på deltagarens nivå → intervall
-          const fewest = Math.ceil(neededWeighted / weights.weight_c);
-          const most = Math.ceil(neededWeighted / weights.weight_a);
+          const currentWeightedSum = weightedSum(c, weights);
+          if (currentWeightedSum === null) return null;
+          const req = requiredResults(currentWeightedSum, c.participants, weights, THRESHOLD);
+          if (!req) return null;
+          const { fewest, most } = req;
           return (
             <div key={c.id} className="card p-4 text-sm">
               <div className="flex flex-wrap items-baseline justify-between gap-2">

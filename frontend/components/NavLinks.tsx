@@ -10,6 +10,7 @@ const links = [
   { href: "/leveransomraden", label: "Områden" },
   { href: "/jamfor", label: "Jämför" },
   { href: "/riskzon", label: "Riskzon" },
+  { href: "/vad-kravs", label: "Vad krävs?" },
   { href: "/handelser", label: "Händelser" },
   { href: "/arkiv", label: "Arkiv" },
   { href: "/marknadsbrevet", label: "Marknadsbrevet" },

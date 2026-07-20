@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/leverantorer`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${BASE}/marknad`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/riskzon`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE}/vad-kravs`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE}/leveransomraden`, changeFrequency: "weekly", priority: 0.8 },
     { url: `${BASE}/jamfor`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${BASE}/handelser`, changeFrequency: "weekly", priority: 0.8 },
