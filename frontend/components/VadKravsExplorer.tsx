@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { PeriodWeights } from "@/lib/types";
 import { formatScore, isRankable, slugify } from "@/lib/format";
 import { WhatIfSlider } from "@/components/WhatIfSlider";
@@ -51,7 +50,6 @@ export function VadKravsExplorer({
   periodLabel: string;
   initialKey: string | null;
 }) {
-  const router = useRouter();
   const byKey = useMemo(() => new Map(contracts.map((c) => [keyOf(c), c])), [contracts]);
   const [selectedKey, setSelectedKey] = useState<string | null>(
     initialKey && byKey.has(initialKey) ? initialKey : null,
@@ -103,8 +101,11 @@ export function VadKravsExplorer({
     setSelectedKey(key);
     setQuery("");
     setGoal({ kind: "threshold" });
-    // Deep-link: uppdatera URL:en så länken kan delas (OG-kortet är per avtal)
-    router.replace(`/vad-kravs?avtal=${encodeURIComponent(key)}`, { scroll: false });
+    // Uppdatera delbara URL:en UTAN navigering (history.replaceState) — router.replace
+    // hade triggat en RSC-runda och blinkat route-loadern över utforskaren.
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/vad-kravs?avtal=${encodeURIComponent(key)}`);
+    }
   }
 
   // Målets viktade värde
