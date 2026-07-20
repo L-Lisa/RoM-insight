@@ -102,7 +102,7 @@ export default async function GuideRatingsPage() {
       </dl>
 
       <p className="text-sm">
-        Djupare detaljer (formeln, källfilerna, kvalitetskontrollerna och Hitta felet-garantin) finns på{" "}
+        Djupare detaljer (formeln, källfilerna och kvalitetskontrollerna) finns på{" "}
         <Link href="/metod" className="link">metodsidan</Link>.
       </p>
     </div>

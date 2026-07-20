@@ -10,7 +10,7 @@ export const revalidate = 3600;
 export const metadata = {
   title: "Metod & källor",
   description:
-    "Hur RoM Insight hämtar, kontrollerar och visar Arbetsförmedlingens data för Rusta och matcha, inklusive Hitta felet-garantin och rättelseloggen.",
+    "Hur RoM Insight hämtar, kontrollerar och visar Arbetsförmedlingens data för Rusta och matcha, och hur du dubbelkollar siffrorna mot källfilen.",
 };
 
 export default async function MethodPage() {
@@ -137,24 +137,23 @@ export default async function MethodPage() {
         </ul>
       </Section>
 
-      <Section title="Hitta felet-garantin" id="hitta-felet">
-        <blockquote className="card p-5 text-sm leading-relaxed">
-          Vi lägger stor möda på att varje siffra ska stämma med Arbetsförmedlingens källdata: automatiska
-          kontroller, manuell granskning före publicering och öppen rättelselogg. Hittar du ändå ett fel har du
-          gjort oss en tjänst: vi rättar inom 48 timmar, krediterar dig om du vill, och bjuder på biobiljetter.
-        </blockquote>
-        <p className="text-sm mt-3">
-          Rapportera fel:{" "}
-          <a className="link" href="mailto:hej@rominsight.se?subject=Felrapport%20RoM%20Insight">
-            hej@rominsight.se
-          </a>
-          . Ange sida, leverantör och period så går det fort.
+      <Section title="Dubbelkolla gärna själv" id="hitta-felet">
+        <p>
+          Sajten är under utveckling och ingen är perfekt. Även om allt vi visar bygger direkt på
+          Arbetsförmedlingens egna dokument kan saker bli fel på vägen. Ser en siffra konstig ut: gå till källan
+          och jämför.
         </p>
-      </Section>
-
-      <Section title="Rättelselogg" id="rattelser">
-        <p className="text-sm text-[var(--text-dim)]">
-          Inga rättelser ännu. Bekräftade fel listas här med datum, vad som var fel och vad som rättats.
+        <p className="text-sm mt-3">
+          Ladda ner Arbetsförmedlingens betygsfil (
+          <a
+            href="https://arbetsformedlingen.se/for-leverantorer/arbetsmarknadstjanster/rusta-och-matcha"
+            className="link"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            Betyg Rusta och matcha januari 2025 – maj 2026, xlsx
+          </a>
+          ) och stäm av direkt mot den.
         </p>
       </Section>
 
