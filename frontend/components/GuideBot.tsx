@@ -211,7 +211,10 @@ export function GuideBot() {
           role="dialog"
           aria-label="Snabbguiden — vanliga frågor"
           className="card mb-2 w-[22rem] max-w-[calc(100vw-2rem)] shadow-2xl flex flex-col"
-          style={{ background: "var(--bg-raised)" }}
+          style={{
+            background: "var(--bg-raised)",
+            borderColor: "color-mix(in srgb, var(--signal) 45%, var(--line))",
+          }}
         >
           <div className="flex items-start justify-between p-3 border-b border-[var(--line)]">
             <div>
@@ -283,9 +286,19 @@ export function GuideBot() {
         aria-haspopup="dialog"
         aria-controls="guidebot-panel"
         aria-label={open ? "Stäng Snabbguiden" : "Öppna Snabbguiden — vanliga frågor"}
-        className="card px-3.5 py-2 text-sm font-medium shadow-2xl hover:bg-[var(--bg-hover)] transition-colors"
-        style={{ background: "var(--bg-raised)" }}
+        className="flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-[filter,transform] hover:brightness-110 active:scale-95"
+        style={{
+          background: "var(--signal)",
+          color: "var(--bg)",
+          boxShadow: "0 4px 24px color-mix(in srgb, var(--signal) 40%, transparent)",
+        }}
       >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path
+            d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v6a1.5 1.5 0 0 1-1.5 1.5H8.4l-3.3 2.8a.5.5 0 0 1-.82-.38V11H3.5A1.5 1.5 0 0 1 2 9.5v-6Z"
+            fill="currentColor"
+          />
+        </svg>
         {open ? "Stäng guiden" : "Ny här? Fråga guiden"}
       </button>
     </div>
