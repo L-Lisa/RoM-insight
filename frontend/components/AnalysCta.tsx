@@ -9,7 +9,7 @@ import { CONTACT_LINKEDIN } from "@/lib/site";
 export function AnalysCta() {
   return (
     <aside
-      className="card p-4 text-sm max-w-3xl"
+      className="no-print card p-4 text-sm max-w-3xl"
       style={{ borderColor: "color-mix(in srgb, var(--signal) 30%, var(--line))" }}
     >
       <p className="font-medium mb-1">Vill ni gå djupare än sajten visar?</p>
