@@ -11,6 +11,7 @@ import { PrintButton } from "@/components/PrintButton";
 import { CompareButton } from "@/components/CompareButton";
 import { ShowSource } from "@/components/ShowSource";
 import { SourceBreakdown } from "@/components/SourceBreakdown";
+import { AnalysCta } from "@/components/AnalysCta";
 import {
   getAllPeriodWeights,
   getLatestPeriod,
@@ -483,6 +484,8 @@ export default async function SupplierPage({ params }: Props) {
           </p>
         </section>
       )}
+
+      <AnalysCta />
     </div>
   );
 }

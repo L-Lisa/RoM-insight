@@ -1,4 +1,5 @@
 import { DataStamp } from "@/components/DataStamp";
+import { AnalysCta } from "@/components/AnalysCta";
 import { VadKravsExplorer, WktContract } from "@/components/VadKravsExplorer";
 import { getLatestPeriod, getPeriodRows, getPeriodWeights } from "@/lib/queries";
 import { periodLabel } from "@/lib/format";
@@ -88,6 +89,8 @@ export default async function VadKravsPage({ searchParams }: Props) {
         periodLabel={latest ? periodLabel(latest) : "senaste perioden"}
         initialKey={initialKey}
       />
+
+      <AnalysCta />
     </div>
   );
 }
