@@ -115,10 +115,12 @@ const TOPICS: Topic[] = [
 
 const FALLBACK: React.ReactNode = (
   <>
-    Jag är en enkel guide utan AI och kan bara de vanligaste frågorna — välj gärna en av dem ovan. Behöver du
-    ett större svar? Lisa som driver sajten tar fram skräddarsydda analyser av marknaden, ett område eller en
-    enskild leverantör: skicka ett meddelande till{" "}
+    Den frågan klarar jag inte — jag är en enkel guide med färdiga svar, ingen AI. En livechatt som svarar
+    smart på precis din fråga kostar pengar att driva, och ärligt talat: de pengarna gör mer nytta hos en
+    människa. Lisa som driver sajten svarar på riktigt och tar fram skräddarsydda analyser — skicka ett
+    meddelande till{" "}
     <a href={CONTACT_LINKEDIN} target="_blank" rel="noreferrer" className="link">KarriärSmeden på LinkedIn</a>.
+    Eller välj en av frågorna ovan, dem kan jag utantill.
   </>
 );
 
