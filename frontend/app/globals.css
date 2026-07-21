@@ -120,7 +120,15 @@ a.link:hover {
 }
 
 /* C4: utskrift/PDF — ljus, ren rapport utan navigation */
+/* Rapport-element: syns endast i print/PDF (motsatsen till .no-print) */
+.print-only {
+  display: none;
+}
+
 @media print {
+  .print-only {
+    display: block;
+  }
   :root {
     --bg: #ffffff;
     --bg-raised: #ffffff;

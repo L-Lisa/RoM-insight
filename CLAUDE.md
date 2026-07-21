@@ -22,7 +22,7 @@ Full product context: `docs/PRD.md`
 
 ```
 RoM-insight/
-├── frontend/          # Next.js 14 app — the deployed dashboard
+├── frontend/          # Next.js 16 app — the deployed dashboard
 ├── scripts/           # Python data ingestion pipeline — runs locally only
 ├── data/raw/          # Excel source files — local only, never committed
 ├── supabase/          # DB schema migrations
@@ -35,7 +35,7 @@ RoM-insight/
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 14, TypeScript, Tailwind CSS, Recharts |
+| Frontend | Next.js 16, TypeScript, Tailwind CSS, Recharts |
 | Database | Supabase (PostgreSQL) with RLS enabled |
 | Data pipeline | Python 3.11, pandas, supabase-py |
 | Hosting | Vercel (frontend only) |

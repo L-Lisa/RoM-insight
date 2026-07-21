@@ -32,6 +32,7 @@ import {
 } from "@/lib/queries";
 import { contractInsight } from "@/lib/insights";
 import { formatScore, isRankable, periodLabel, periodShort, slugify } from "@/lib/format";
+import { SITE_URL } from "@/lib/site";
 import { MAX_COMPARE } from "@/lib/compare";
 import { RomResult } from "@/lib/types";
 
@@ -151,13 +152,31 @@ export default async function SupplierPage({ params }: Props) {
 
   return (
     <div className="space-y-8">
+      {/* Rapporthuvud — endast i print/PDF ("Er rapport") */}
+      <div className="print-only border-b pb-4" style={{ borderColor: "var(--line)" }}>
+        <p className="text-xs text-[var(--text-dim)]">RoM Insight · oberoende statistik för Rusta och matcha</p>
+        <p className="text-xl font-semibold mt-1">Rapport: {name}</p>
+        <p className="text-sm text-[var(--text-dim)] mt-1">
+          Data t.o.m. {periodLabel(isExited ? lastSeen : latestPeriod!)} · Källa: Arbetsförmedlingens öppna filer
+        </p>
+      </div>
+
       <div>
-        <Link href="/leverantorer" className="text-sm text-[var(--text-dim)] hover:text-[var(--text)]">
+        <Link href="/leverantorer" className="no-print text-sm text-[var(--text-dim)] hover:text-[var(--text)]">
           ← Alla leverantörer
         </Link>
         <div className="flex flex-wrap items-center gap-3 mt-2">
           <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
-          <span className="ml-auto"><PrintButton /></span>
+          <span className="ml-auto flex items-center gap-2">
+            <a
+              href={`/leverantorer/${slugify(name)}/rss`}
+              className="no-print text-sm px-4 py-2 rounded-lg border border-[var(--line)] hover:bg-[var(--bg-hover)] transition-colors"
+              title="Prenumerera i en RSS-läsare (t.ex. Feedly) — ni får en notis med nya siffror vid varje AF-släpp"
+            >
+              Bevaka
+            </a>
+            <PrintButton label="Spara som rapport (PDF)" />
+          </span>
           {isExited && (
             <span className="text-xs px-2 py-1 rounded-[var(--radius-badge)]" style={{ background: "rgba(224,108,108,0.12)", color: "var(--terminated)", border: "1px solid rgba(224,108,108,0.35)" }}>
               Utgången ur statistiken, sista data {periodLabel(lastSeen)}
@@ -486,6 +505,16 @@ export default async function SupplierPage({ params }: Props) {
       )}
 
       <AnalysCta />
+
+      {/* Rapportfot — endast i print/PDF. Källhänvisning är rapportens ryggrad. */}
+      <div className="print-only pt-4 text-xs text-[var(--text-dim)]" style={{ borderTop: "1px solid var(--line)" }}>
+        <p>
+          Rapporten är framtagen via RoM Insight ({new URL(SITE_URL).host}) ur Arbetsförmedlingens öppna filer
+          för Rusta och matcha. Viktat resultat beräknas med Arbetsförmedlingens egen formel och kan kontrolleras
+          mot källfilen — se metodsidan på sajten. Betyg sätts av Arbetsförmedlingen. Sajten är oberoende:
+          ingen leverantör kan påverka statistiken.
+        </p>
+      </div>
     </div>
   );
 }

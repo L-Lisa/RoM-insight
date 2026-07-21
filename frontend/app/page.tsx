@@ -6,6 +6,7 @@ import { CompareButton } from "@/components/CompareButton";
 import { ShowSource } from "@/components/ShowSource";
 import { DataStamp } from "@/components/DataStamp";
 import { HomeConstellation } from "@/components/HomeConstellation";
+import { HeroSearch } from "@/components/HeroSearch";
 import { MarketChart } from "@/components/MarketChart";
 import {
   diffPeriods,
@@ -64,6 +65,13 @@ export default async function OverviewPage() {
           Här sparas historiken, så att du ser hur varje leverantör och leveransområde faktiskt utvecklas:
           trender, lyft och tapp, oberoende och direkt ur AF:s filer.
         </p>
+        <div className="mt-4">
+          <HeroSearch
+            suppliers={Array.from(new Set(latestRows.map((r) => r.supplier)))
+              .sort((a, b) => a.localeCompare(b, "sv"))
+              .map((n) => ({ name: n, slug: slugify(n) }))}
+          />
+        </div>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
           <Link href="/leverantorer" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Hitta en leverantör</Link>
           <Link href="/leveransomraden" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Sök på kommun</Link>
