@@ -58,11 +58,19 @@ export default async function OverviewPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Rusta och matcha-marknaden i siffror</h1>
-        <p className="text-sm text-[var(--text-dim)] mt-1">
-          Oberoende statistik per leverantör och leveransområde — betyg, viktade resultat, trender och händelser.
+        <h1 className="text-2xl font-semibold tracking-tight">Hela Rusta och matcha-marknaden i siffror</h1>
+        <p className="text-sm text-[var(--text-dim)] mt-1 max-w-3xl">
+          Arbetsförmedlingen publicerar betyg och resultat varannan månad — men bara som ögonblicksbilder.
+          Här sparas historiken, så att du ser hur varje leverantör och leveransområde faktiskt utvecklas:
+          trender, lyft och tapp, oberoende och direkt ur AF:s filer.
         </p>
-        <div className="mt-2">
+        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+          <Link href="/leverantorer" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Hitta en leverantör</Link>
+          <Link href="/leveransomraden" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Sök på kommun</Link>
+          <Link href="/jamfor" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Jämför avtal</Link>
+          <Link href="/vad-kravs" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Vad krävs för att lyfta?</Link>
+        </div>
+        <div className="mt-3">
           <DataStamp period={latest} />
         </div>
       </div>

@@ -4,6 +4,7 @@ import "./globals.css";
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
 import { CompareTray } from "@/components/CompareTray";
+import { GuideBot } from "@/components/GuideBot";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
 
@@ -41,6 +42,7 @@ export default function RootLayout({
         </header>
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
         <CompareTray />
+        <GuideBot />
         <footer className="border-t border-[var(--line)] mt-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-xs text-[var(--text-dim)] space-y-2">
             <p>
@@ -55,6 +57,12 @@ export default function RootLayout({
               Sajten är under utveckling — dubbelkolla gärna siffrorna mot källfilen.{" "}
               <Link href="/metod#hitta-felet" className="underline underline-offset-2 hover:text-[var(--text)]">
                 Så gör du
+              </Link>
+            </p>
+            <p>
+              Behöver du ett djupare underlag än sajten visar?{" "}
+              <Link href="/om#analyser" className="underline underline-offset-2 hover:text-[var(--text)]">
+                Skräddarsydda analyser
               </Link>
             </p>
           </div>
