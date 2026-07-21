@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_LINKEDIN } from "@/lib/site";
 
 export const metadata = {
   title: "Om sajten",
@@ -32,7 +32,10 @@ export default function AboutPage() {
           <Link href="/metod" className="link">metodsidan</Link>.
         </p>
         <p>
-          Kontakt: <a className="link" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          Kontakt:{" "}
+          <a className="link" href={CONTACT_LINKEDIN} target="_blank" rel="noreferrer">
+            skicka ett meddelande till KarriärSmeden på LinkedIn
+          </a>
         </p>
       </section>
 
@@ -41,8 +44,11 @@ export default function AboutPage() {
         <p>
           Sajten visar det Arbetsförmedlingen publicerar. Behöver din verksamhet mer — en genomgång av ert
           leveransområde, en konkurrentjämförelse eller ett underlag inför en etablering i nya områden — tar jag sådana uppdrag.
-          Mejla <a className="link" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> och beskriv vad du
-          behöver, så återkommer jag med vad som går att göra.
+          Skicka ett meddelande till{" "}
+          <a className="link" href={CONTACT_LINKEDIN} target="_blank" rel="noreferrer">
+            KarriärSmeden på LinkedIn
+          </a>{" "}
+          och beskriv vad du behöver, så återkommer jag med vad som går att göra.
         </p>
       </section>
     </div>

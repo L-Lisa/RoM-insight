@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CONTACT_EMAIL } from "@/lib/site";
+import { CONTACT_LINKEDIN } from "@/lib/site";
 import { getCompare, subscribeCompare } from "@/lib/compare";
 
 /**
@@ -104,8 +104,10 @@ const TOPICS: Topic[] = [
     answer: (
       <>
         Ja. Lisa som driver sajten tar fram skräddarsydda analyser — till exempel en genomgång av ert
-        leveransområde, en konkurrentjämförelse eller ett underlag inför en etablering i nya områden. Mejla{" "}
-        <a href={`mailto:${CONTACT_EMAIL}`} className="link">{CONTACT_EMAIL}</a> och beskriv vad du behöver.
+        leveransområde, en konkurrentjämförelse eller ett underlag inför en etablering i nya områden. Skicka
+        ett meddelande till{" "}
+        <a href={CONTACT_LINKEDIN} target="_blank" rel="noreferrer" className="link">KarriärSmeden på LinkedIn</a>{" "}
+        och beskriv vad du behöver.
       </>
     ),
   },
@@ -115,7 +117,8 @@ const FALLBACK: React.ReactNode = (
   <>
     Jag är en enkel guide utan AI och kan bara de vanligaste frågorna — välj gärna en av dem ovan. Behöver du
     ett större svar? Lisa som driver sajten tar fram skräddarsydda analyser av marknaden, ett område eller en
-    enskild leverantör: mejla <a href={`mailto:${CONTACT_EMAIL}`} className="link">{CONTACT_EMAIL}</a>.
+    enskild leverantör: skicka ett meddelande till{" "}
+    <a href={CONTACT_LINKEDIN} target="_blank" rel="noreferrer" className="link">KarriärSmeden på LinkedIn</a>.
   </>
 );
 
