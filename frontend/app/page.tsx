@@ -74,7 +74,7 @@ export default async function OverviewPage() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-sm">
           <Link href="/leverantorer" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Hitta en leverantör</Link>
-          <Link href="/leveransomraden" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Sök på kommun</Link>
+          <Link href="/leveransomraden" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Sök i ditt leverantörsområde</Link>
           <Link href="/jamfor" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Jämför avtal</Link>
           <Link href="/vad-kravs" className="rounded-lg border border-[var(--line)] px-3 py-1.5 hover:bg-[var(--bg-hover)] transition-colors">Vad krävs för att lyfta?</Link>
         </div>
