@@ -7,13 +7,17 @@ the generated SQL is reviewed and applied separately (guardrails layer 2:
 automation prepares, a human releases).
 
 Sources (canonical period → file):
+  2026-01 .. 2026-07  resultatuppfoljning-och-resultatoversyn-rusta-och-matcha-juli-2026.xlsx
+  ratings jan 2025 – juli 2026: betyg-rusta-och-matcha-juli-2026.xlsx
+  A/B/C weights per period: Beräkningssnurra sheets in the resultat file
+
+Historical sources (no longer on AF's page; periods live in production):
   2025-03 .. 2025-11  resultatuppfoljning-mars-november-2025.xlsx
   2026-01 .. 2026-05  resultatuppfoljning-maj-2026.xlsx
-  ratings jan 2025 – maj 2026: betyg-rusta-och-matcha-maj-2026.xlsx
-  A/B/C weights per period: Beräkningssnurra sheets in both resultat files
 
-2026-01 is already in production (imported earlier) — it is verified against
-the file but NOT re-inserted; only its ka_number values are backfilled.
+Periods in ALREADY_IN_PROD are verified against the file but NOT re-inserted.
+Revision check against production (AF revises retroactively) is done by
+scripts/import_gate.py — the mandatory gate in docs/DATA_PIPELINE.md.
 
 Output: data/generated_sql/NN_*.sql + data/generated_sql/backfill-report.md
 
@@ -37,16 +41,16 @@ SOURCE_DIR = ROOT / "data" / "raw" / "source"
 OUT_DIR = ROOT / "data" / "generated_sql"
 
 RESULT_FILES = {
-    "resultatuppfoljning-mars-november-2025.xlsx": ["2025-03", "2025-05", "2025-07", "2025-09", "2025-11"],
-    "resultatuppfoljning-maj-2026.xlsx": ["2026-01", "2026-03", "2026-05"],
+    "resultatuppfoljning-och-resultatoversyn-rusta-och-matcha-juli-2026.xlsx": ["2026-01", "2026-03", "2026-05", "2026-07"],
 }
-# Overlap files used only for cross-checking identical content
+# Overlap files used only for cross-checking identical content (skipped if absent)
 CROSSCHECK_FILES = {
     "resultatuppfoljning-mars-maj-2025.xlsx": ["2025-03", "2025-05"],
     "resultatuppfoljning-mars-september-2025.xlsx": ["2025-03", "2025-05", "2025-07", "2025-09"],
+    "resultatuppfoljning-maj-2026.xlsx": ["2026-01", "2026-03", "2026-05"],
 }
-BETYG_FILE = "betyg-rusta-och-matcha-maj-2026.xlsx"
-ALREADY_IN_PROD = {"2026-01"}
+BETYG_FILE = "betyg-rusta-och-matcha-juli-2026.xlsx"
+ALREADY_IN_PROD = {"2026-01", "2026-03", "2026-05"}
 
 SWEDISH_MONTHS = {
     "januari": 1, "februari": 2, "mars": 3, "april": 4, "maj": 5, "juni": 6,
@@ -86,6 +90,12 @@ def sql_bool(v) -> str:
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return "null"
     return "true" if v else "false"
+
+
+def sql_date(v) -> str:
+    if v is None or pd.isna(v):
+        return "null"
+    return f"'{v}'"
 
 
 def parse_result_sheet(xl: pd.ExcelFile, period: str) -> pd.DataFrame:
@@ -333,8 +343,11 @@ def main():
         "insert into supplier_ratings (ka_number, supplier, delivery_area, af_region, rating, period, source_file) values",
         rating_rows,
     )
-    text = "-- betygshistorik jan 2025–maj 2026 (NULL = 'Betyg saknas' i källfilen)\n" + "".join(
-        s.replace(";\n", "\non conflict (ka_number, period) do nothing;\n") for s in stmts
+    # Revisionspolicy (Lisa 2026-07-03): senaste revision vinner — AF kan
+    # revidera historiska betyg; do update håller DB i takt med senaste filen.
+    text = "-- betygshistorik (NULL = 'Betyg saknas' i källfilen). Senaste revision vinner.\n" + "".join(
+        s.replace(";\n", "\non conflict (ka_number, period) do update set "
+                         "rating = excluded.rating, source_file = excluded.source_file;\n") for s in stmts
     )
     (OUT_DIR / "02_supplier_ratings.sql").write_text(text, encoding="utf-8")
 
@@ -349,8 +362,18 @@ def main():
             f"({sql_str(r['supplier'])}, {sql_str(r['delivery_area'])}, {sql_str(r['ka_number'])}, "
             f"{sql_num(r['participants'])}, {sql_num(r['results'])}, {sql_num(r['rating'])}, "
             f"{sql_num(r['weighted_score'])}, {sql_num(r['result_rate'])}, "
-            f"{sql_bool(r['risk_of_termination'])}, '{r['dataset_date']}')"
+            f"{sql_bool(r['risk_of_termination'])}, {sql_date(r['contract_start_date'])}, "
+            f"{sql_bool(r['active_22_months'])}, "
+            f"{sql_num(r['participants_a'])}, {sql_num(r['participants_b'])}, {sql_num(r['participants_c'])}, "
+            f"{sql_num(r['rr1_a'])}, {sql_num(r['rr2_a'])}, {sql_num(r['rr1_b'])}, {sql_num(r['rr2_b'])}, "
+            f"{sql_num(r['rr1_c'])}, {sql_num(r['rr2_c'])}, '{r['dataset_date']}')"
         )
+        level_cols = ("contract_start_date, active_22_months, participants_a, participants_b, participants_c, "
+                      "rr1_a, rr2_a, rr1_b, rr2_b, rr1_c, rr2_c")
+        level_select = ("v.contract_start_date::date, v.active_22_months::boolean, "
+                        "v.participants_a::numeric, v.participants_b::numeric, v.participants_c::numeric, "
+                        "v.rr1_a::numeric, v.rr2_a::numeric, v.rr1_b::numeric, v.rr2_b::numeric, "
+                        "v.rr1_c::numeric, v.rr2_c::numeric")
         rows = [val(r) for _, r in df.iterrows()]
         for i in range(0, len(rows), 400):
             chunk = ",\n".join(rows[i:i + 400])
@@ -360,7 +383,7 @@ with ds as (
   values ('Arbetsförmedlingen', {sql_str(fname)})
   on conflict (file_path) do update set file_path = excluded.file_path
   returning dataset_id
-), v (supplier, delivery_area, ka_number, participants, results, rating, weighted_score, result_rate, risk_of_termination, dataset_date) as (
+), v (supplier, delivery_area, ka_number, participants, results, rating, weighted_score, result_rate, risk_of_termination, contract_start_date, active_22_months, participants_a, participants_b, participants_c, rr1_a, rr2_a, rr1_b, rr2_b, rr1_c, rr2_c, dataset_date) as (
   values
 {chunk}
 ), st as (
@@ -368,8 +391,8 @@ with ds as (
   select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants::numeric, v.results::numeric, v.rating::numeric, v.weighted_score::numeric, v.dataset_date::date
   from ds, v
 )
-insert into rom_results (dataset_id, supplier, delivery_area, ka_number, participants, results, rating, weighted_score, result_rate, risk_of_termination, dataset_date)
-select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants::numeric, v.results::numeric, v.rating::numeric, v.weighted_score::numeric, v.result_rate::numeric, v.risk_of_termination::boolean, v.dataset_date::date
+insert into rom_results (dataset_id, supplier, delivery_area, ka_number, participants, results, rating, weighted_score, result_rate, risk_of_termination, {level_cols}, dataset_date)
+select ds.dataset_id, v.supplier, v.delivery_area, v.ka_number, v.participants::numeric, v.results::numeric, v.rating::numeric, v.weighted_score::numeric, v.result_rate::numeric, v.risk_of_termination::boolean, {level_select}, v.dataset_date::date
 from ds, v
 on conflict (supplier, delivery_area, dataset_date) do nothing;
 """)
@@ -413,11 +436,12 @@ where r.supplier = m.supplier and r.delivery_area = m.delivery_area
     # ---- 7. Expected end-state (for post-import verification) ----
     total_new = sum(len(periods[p]) for p in periods if p not in ALREADY_IN_PROD)
     report += ["", "## Förväntat slutläge efter import (verifiera mot DB)"]
-    report.append(f"- rom_results: 925 (befintliga) + {total_new} nya = {925 + total_new} rader")
-    report.append(f"- supplier_ratings: {len(betyg)} rader")
-    report.append(f"- suppliers: {len(canonical)} rader")
-    report.append(f"- period_weights: {len(weights)} rader")
-    report.append(f"- perioder i rom_results: {', '.join(sorted(set(periods)))}")
+    report.append(f"- rom_results: befintliga + {total_new} nya rader "
+                  f"(nya perioder: {', '.join(sorted(p for p in periods if p not in ALREADY_IN_PROD))})")
+    report.append(f"- supplier_ratings: {len(betyg)} rader ur betygsfilen (befintliga uppdateras vid revision)")
+    report.append(f"- suppliers: minst {len(canonical)} rader (nya läggs till, inga tas bort)")
+    report.append(f"- period_weights: minst {len(weights)} rader")
+    report.append(f"- perioder i källfilen: {', '.join(sorted(set(periods)))}")
 
     (OUT_DIR / "backfill-report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
     print("\n".join(report))
